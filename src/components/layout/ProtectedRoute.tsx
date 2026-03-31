@@ -8,10 +8,10 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, isInitialized, isLoading, profile } = useAuthStore()
+  const { user, isInitialized, profile } = useAuthStore()
   const location = useLocation()
 
-  if (!isInitialized || isLoading) {
+  if (!isInitialized) {
     return <PageSpinner label="Ładowanie..." />
   }
 

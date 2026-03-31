@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"c:/Users/mateu/Desktop/Cloude projekty/InspekcjAI/.env\"*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(k\\) for k in d.get\\(''''exports'''',{}\\).keys\\(\\)]\")",
+      "Bash(node -e \"const {z} = require\\(''zod''\\); const s = z.object\\({name: z.string\\(\\)}\\); console.log\\(''_def keys:'', Object.keys\\(s._def\\)\\); console.log\\(''has typeName:'', ''typeName'' in s._def\\); console.log\\(''_def.typeName:'', s._def.typeName\\);\")",
+      "Bash(node -e \":*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5174)",
+      "Bash(curl -s http://localhost:5174)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(python -c \":*)",
+      "Bash(where pip:*)",
+      "Bash(where pip3:*)",
+      "Bash(where node:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(node --input-type=module -e \":*)",
+      "Bash(npx vite:*)",
+      "Bash(grep -n \"as any\" \"/c/Users/mateu/Desktop/Cloude projekty/InspekcjAI/src/pages/inspections/\"*.tsx)",
+      "Read(//c/Users/mateu/Desktop/**)",
+      "Bash(while read:*)",
+      "Bash(do grep:*)",
+      "Bash(done)"
+    ]
+  }
+}

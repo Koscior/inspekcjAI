@@ -16,10 +16,13 @@ export const ROUTES = {
   INSPECTIONS:           '/inspections',
   INSPECTION_NEW:        '/inspections/new',
   INSPECTION_DETAIL:     '/inspections/:id',
-  INSPECTION_DEFECTS:    '/inspections/:id/defects',
-  INSPECTION_FLOORPLANS: '/inspections/:id/floor-plans',
+  INSPECTION_DEFECTS:       '/inspections/:id/defects',
+  INSPECTION_DEFECT_NEW:    '/inspections/:id/defects/new',
+  INSPECTION_DEFECT_DETAIL: '/inspections/:id/defects/:defectId',
+  INSPECTION_FLOORPLANS:    '/inspections/:id/floor-plans',
   INSPECTION_PHOTOS:     '/inspections/:id/photos',
   INSPECTION_CHECKLIST:  '/inspections/:id/checklist',
+  INSPECTION_BUILDING_DOCS: '/inspections/:id/building-docs',
   INSPECTION_REPORT:     '/inspections/:id/report',
 
   // Photo annotation

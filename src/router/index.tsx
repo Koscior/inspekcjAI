@@ -9,7 +9,23 @@ import { ROUTES } from './routePaths'
 const LoginPage      = lazy(() => import('@/pages/auth/LoginPage'))
 const RegisterPage   = lazy(() => import('@/pages/auth/RegisterPage'))
 const OnboardingPage = lazy(() => import('@/pages/auth/OnboardingPage'))
-const DashboardPage  = lazy(() => import('@/pages/dashboard/DashboardPage'))
+const DashboardPage     = lazy(() => import('@/pages/dashboard/DashboardPage'))
+const InspectionsPage    = lazy(() => import('@/pages/inspections/InspectionsPage'))
+const NewInspectionPage       = lazy(() => import('@/pages/inspections/NewInspectionPage'))
+const InspectionDetailPage    = lazy(() => import('@/pages/inspections/InspectionDetailPage'))
+const ClientsPage             = lazy(() => import('@/pages/clients/ClientsPage'))
+const NewClientPage           = lazy(() => import('@/pages/clients/NewClientPage'))
+const ClientDetailPage        = lazy(() => import('@/pages/clients/ClientDetailPage'))
+
+// Phase 3 pages
+const DefectsPage         = lazy(() => import('@/pages/inspections/DefectsPage'))
+const NewDefectPage       = lazy(() => import('@/pages/inspections/NewDefectPage'))
+const DefectDetailPage    = lazy(() => import('@/pages/inspections/DefectDetailPage'))
+const PhotosPage          = lazy(() => import('@/pages/inspections/PhotosPage'))
+const PhotoAnnotatePage   = lazy(() => import('@/pages/inspections/PhotoAnnotatePage'))
+const FloorPlansPage      = lazy(() => import('@/pages/inspections/FloorPlansPage'))
+const ChecklistPage       = lazy(() => import('@/pages/inspections/ChecklistPage'))
+const BuildingDocsPage    = lazy(() => import('@/pages/inspections/BuildingDocsPage'))
 
 // Placeholders for future pages
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -48,27 +64,64 @@ export const router = createBrowserRouter([
       },
       {
         path: ROUTES.INSPECTIONS,
-        element: wrap(<PlaceholderPage title="Inspekcje" />),
+        element: wrap(<InspectionsPage />),
       },
       {
         path: ROUTES.INSPECTION_NEW,
-        element: wrap(<PlaceholderPage title="Nowa inspekcja" />),
+        element: wrap(<NewInspectionPage />),
       },
       {
         path: ROUTES.INSPECTION_DETAIL,
-        element: wrap(<PlaceholderPage title="Szczegóły inspekcji" />),
+        element: wrap(<InspectionDetailPage />),
       },
       {
         path: ROUTES.CLIENTS,
-        element: wrap(<PlaceholderPage title="Klienci" />),
+        element: wrap(<ClientsPage />),
       },
       {
         path: ROUTES.CLIENT_NEW,
-        element: wrap(<PlaceholderPage title="Nowy klient" />),
+        element: wrap(<NewClientPage />),
       },
       {
         path: ROUTES.CLIENT_DETAIL,
-        element: wrap(<PlaceholderPage title="Szczegóły klienta" />),
+        element: wrap(<ClientDetailPage />),
+      },
+      // Phase 3 routes
+      {
+        path: ROUTES.INSPECTION_DEFECTS,
+        element: wrap(<DefectsPage />),
+      },
+      {
+        path: ROUTES.INSPECTION_DEFECT_NEW,
+        element: wrap(<NewDefectPage />),
+      },
+      {
+        path: ROUTES.INSPECTION_DEFECT_DETAIL,
+        element: wrap(<DefectDetailPage />),
+      },
+      {
+        path: ROUTES.INSPECTION_PHOTOS,
+        element: wrap(<PhotosPage />),
+      },
+      {
+        path: ROUTES.PHOTO_ANNOTATE,
+        element: wrap(<PhotoAnnotatePage />),
+      },
+      {
+        path: ROUTES.INSPECTION_FLOORPLANS,
+        element: wrap(<FloorPlansPage />),
+      },
+      {
+        path: ROUTES.INSPECTION_CHECKLIST,
+        element: wrap(<ChecklistPage />),
+      },
+      {
+        path: ROUTES.INSPECTION_BUILDING_DOCS,
+        element: wrap(<BuildingDocsPage />),
+      },
+      {
+        path: ROUTES.INSPECTION_REPORT,
+        element: wrap(<PlaceholderPage title="Raport" />),
       },
       {
         path: ROUTES.REPORTS,

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
 import { useAuthStore } from '@/store/authStore'
@@ -8,7 +8,7 @@ import type { Profile } from '@/types/domain'
 
 export function useAuth() {
   const { user, session, profile, isLoading, isInitialized,
-          setUser, setSession, setProfile, setLoading, setInitialized, reset } = useAuthStore()
+          setProfile, setLoading, reset } = useAuthStore()
   const addToast = useUiStore((s) => s.addToast)
   const navigate = useNavigate()
 
@@ -25,40 +25,7 @@ export function useAuth() {
     }
   }, [setProfile])
 
-  // ── Initialize auth listener ──────────────────────────────────────────────
-  useEffect(() => {
-    setLoading(true)
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id).finally(() => {
-          setLoading(false)
-          setInitialized(true)
-        })
-      } else {
-        setLoading(false)
-        setInitialized(true)
-      }
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchProfile(session.user.id)
-        } else {
-          setProfile(null)
-        }
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // Auth initialization is handled by useAuthInit in App.tsx
 
   // ── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback(async (email: string, password: string) => {
@@ -77,7 +44,7 @@ export function useAuth() {
   // ── Register ───────────────────────────────────────────────────────────────
   const register = useCallback(async (email: string, password: string, fullName: string) => {
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } },
@@ -89,7 +56,15 @@ export function useAuth() {
       throw error
     }
 
-    addToast({ type: 'success', message: 'Konto zostało utworzone. Sprawdź e-mail.' })
+    if (!data.session) {
+      // Email confirmation is required — user must verify before signing in
+      addToast({ type: 'success', message: 'Sprawdź swoją skrzynkę e-mail, aby potwierdzić konto.' })
+      navigate(ROUTES.LOGIN)
+      return
+    }
+
+    // Auto-confirmed (email confirmation disabled in Supabase) — go to onboarding
+    addToast({ type: 'success', message: 'Konto zostało utworzone!' })
     navigate(ROUTES.ONBOARDING)
   }, [setLoading, addToast, navigate])
 

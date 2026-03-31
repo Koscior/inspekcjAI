@@ -3,7 +3,6 @@ import { Menu } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { MobileNav } from './MobileNav'
 import { useUiStore } from '@/store/uiStore'
-import { ToastContainer } from '@/components/ui'
 
 export function AppLayout() {
   const { sidebarOpen, setSidebarOpen, toggleSidebar } = useUiStore()
@@ -47,16 +46,13 @@ export function AppLayout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-0 px-4 py-4 md:px-6 md:py-6">
           <Outlet />
         </main>
       </div>
 
       {/* Mobile Bottom Nav */}
       <MobileNav />
-
-      {/* Global Toast */}
-      <ToastContainer />
     </div>
   )
 }

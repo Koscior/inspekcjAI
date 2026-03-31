@@ -2,8 +2,8 @@
 -- Migration: 003_storage.sql
 
 INSERT INTO storage.buckets (id, name, public) VALUES
-  ('photos',       'photos',       false),
-  ('floor-plans',  'floor-plans',  false),
+  ('photos',       'photos',       true),
+  ('floor-plans',  'floor-plans',  true),
   ('voice-notes',  'voice-notes',  false),
   ('report-pdfs',  'report-pdfs',  false),
   ('branding',     'branding',     true);

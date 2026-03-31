@@ -108,11 +108,12 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   error?: string
   hint?: string
   placeholder?: string
-  options: Array<{ value: string; label: string }>
+  options?: Array<{ value: string; label: string }>
+  children?: React.ReactNode
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, hint, placeholder, options, className, id, ...props }, ref) => {
+  ({ label, error, hint, placeholder, options, children, className, id, ...props }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-')
 
     return (
@@ -138,9 +139,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           {...props}
         >
           {placeholder && <option value="">{placeholder}</option>}
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
+          {options
+            ? options.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))
+            : children}
         </select>
         {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
         {!error && hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}

@@ -29,13 +29,31 @@ export const DEFECT_CATEGORIES = [
   'Konstrukcja',
   'Instalacje elektryczne',
   'Instalacje hydrauliczne',
+  'Instalacja elektryczna/teletechniczna',
+  'Tynki i malowanie',
   'Stolarka okienna',
   'Stolarka drzwiowa',
-  'Elewacja',
+  'Podłogi',
+  'Ściany',
+  'Sufit',
   'Dach',
-  'Balkony i tarasy',
+  'Elewacja',
+  'Balkon/Taras',
   'Pozostałe prace',
+  'Uwagi BHP',
 ] as const
+
+export const DEFECT_STATUSES = {
+  open:        'Nowy',
+  in_progress: 'W trakcie',
+  closed:      'Zakończone',
+} as const
+
+/** Inspection types that support checklist */
+export const CHECKLIST_INSPECTION_TYPES = ['roczny', 'piecioletni', 'plac_zabaw'] as const
+
+/** Inspection types that support building documentation section */
+export const BUILDING_DOCS_INSPECTION_TYPES = ['roczny', 'piecioletni'] as const
 
 export const BUILDING_CONSTRUCTION_TYPES = [
   'żelbetowa',

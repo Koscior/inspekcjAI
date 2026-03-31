@@ -1,6 +1,8 @@
 import { RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { router } from '@/router'
+import { useAuthInit } from '@/hooks/useAuthInit'
+import { ToastContainer } from '@/components/ui'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -12,9 +14,12 @@ const queryClient = new QueryClient({
 })
 
 export default function App() {
+  useAuthInit()
+
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
+      <ToastContainer />
     </QueryClientProvider>
   )
 }

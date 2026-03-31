@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git --version)",
+      "Bash(gh --version)",
+      "Bash(git config:*)",
+      "Bash(curl -s -X POST https://api.github.com/user/repos:*)",
+      "Bash(npm create:*)",
+      "Bash(npx create-vite@latest . --template react-ts)",
+      "Bash(echo \"exit: $?\")",
+      "Read(//c/Users/mateu/Desktop/Cloude projekty/**)",
+      "Bash(npx create-vite@latest InspekcjAI-temp --template react-ts)",
+      "Bash(cp -r \"/c/Users/mateu/Desktop/Cloude projekty/InspekcjAI-temp/.\" \"/c/Users/mateu/Desktop/Cloude projekty/InspekcjAI/\")",
+      "Bash(rm -rf \"/c/Users/mateu/Desktop/Cloude projekty/InspekcjAI-temp\")",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(npm run:*)",
+      "Bash(pip install:*)",
+      "Bash(where python3:*)",
+      "Bash(where py:*)",
+      "Bash(where python:*)",
+      "Bash(python3 -m pip install pdfplumber)",
+      "Bash(py --version)",
+      "Bash(node -e \":*)",
+      "Read(//c/Users/mateu/Downloads/pdf-reader/**)",
+      "Bash(node read-pdfs.mjs)"
+    ]
+  }
+}
