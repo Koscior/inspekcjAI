@@ -51,6 +51,7 @@ export function useChecklist(inspectionId: string | undefined, inspectionType: I
         section: tpl.section,
         element_name: tpl.element_name,
         sort_order: tpl.sort_order,
+        field_type: tpl.field_type || 'text_photos',
         state: null,
         notes: null,
         photo_refs: [],

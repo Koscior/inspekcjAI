@@ -8,7 +8,7 @@ interface PhotoUploaderProps {
   inspectionId: string
   defectId?: string
   checklistItemId?: string
-  onUploaded?: () => void
+  onUploaded?: (lastPhotoId: string) => void
 }
 
 export function PhotoUploader({ inspectionId, defectId, checklistItemId, onUploaded }: PhotoUploaderProps) {
@@ -20,6 +20,7 @@ export function PhotoUploader({ inspectionId, defectId, checklistItemId, onUploa
   async function handleFiles(files: FileList | null) {
     if (!files?.length) return
 
+    let lastPhotoId: string | undefined
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) {
         addToast({ type: 'error', message: `${file.name} nie jest zdjęciem` })
@@ -27,19 +28,20 @@ export function PhotoUploader({ inspectionId, defectId, checklistItemId, onUploa
       }
 
       try {
-        await upload.mutateAsync({
+        const photo = await upload.mutateAsync({
           inspectionId,
           file,
           defectId,
           checklistItemId,
         })
+        lastPhotoId = photo.id
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Błąd uploadu'
         addToast({ type: 'error', message: msg })
       }
     }
 
-    onUploaded?.()
+    if (lastPhotoId) onUploaded?.(lastPhotoId)
     // Reset inputs
     if (fileRef.current) fileRef.current.value = ''
     if (cameraRef.current) cameraRef.current.value = ''

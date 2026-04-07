@@ -43,10 +43,10 @@ export function Step5Summary({ data }: Step5SummaryProps) {
           <div className="rounded-lg bg-gray-50 border border-gray-200 px-3">
             <Row label="Nazwa" value={data.title} />
             <Row label="Adres" value={fullAddress || undefined} />
-            <Row label="Rodzaj budynku" value={data.building_type} />
-            <Row label="Konstrukcja" value={data.construction_type} />
+            {data.type !== 'plac_zabaw' && <Row label="Rodzaj budynku" value={data.building_type} />}
+            {data.type !== 'plac_zabaw' && <Row label="Konstrukcja" value={data.construction_type} />}
             <Row label="Rok budowy" value={data.year_built} />
-            <Row label="Piętro / lokal" value={data.floor_or_unit} />
+            {data.type !== 'plac_zabaw' && <Row label="Piętro / lokal" value={data.floor_or_unit} />}
           </div>
         </div>
 
@@ -59,12 +59,45 @@ export function Step5Summary({ data }: Step5SummaryProps) {
           </div>
         )}
 
-        {(data.inspection_date || data.owner_name || data.manager_name || data.investor_name || data.contractor_name || data.notes) && (
+        {data.type === 'plac_zabaw' && (data.pg_liczba_urzadzen || data.pg_rodzaje_urzadzen || data.pg_material_urzadzen || data.pg_nawierzchnia || data.pg_nawierzchnia_pod_urzadzeniami || data.pg_mocowanie_urzadzen || data.pg_ogrodzenie || data.pg_naslonecznienie) && (
+          <div>
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Charakterystyka placu zabaw</h3>
+            <div className="rounded-lg bg-gray-50 border border-gray-200 px-3">
+              <Row label="Liczba urządzeń" value={data.pg_liczba_urzadzen} />
+              <Row label="Rodzaje urządzeń" value={data.pg_rodzaje_urzadzen} />
+              <Row label="Materiały urządzeń" value={data.pg_material_urzadzen} />
+              <Row label="Nawierzchnia" value={data.pg_nawierzchnia} />
+              <Row label="Nawierzchnia pod urz." value={data.pg_nawierzchnia_pod_urzadzeniami} />
+              <Row label="Mocowanie urządzeń" value={data.pg_mocowanie_urzadzen} />
+              <Row label="Ogrodzenie" value={data.pg_ogrodzenie} />
+              <Row label="Nasłonecznienie" value={data.pg_naslonecznienie} />
+            </div>
+          </div>
+        )}
+
+        {(data.powierzchnia_zabudowy || data.powierzchnia_uzytkowa || data.kubatura || data.kondygnacje_nadziemne || data.kondygnacje_podziemne) && (
+          <div>
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Dane techniczne</h3>
+            <div className="rounded-lg bg-gray-50 border border-gray-200 px-3">
+              <Row label="Pow. zabudowy" value={data.powierzchnia_zabudowy ? `${data.powierzchnia_zabudowy} m²` : undefined} />
+              <Row label="Pow. użytkowa" value={data.powierzchnia_uzytkowa ? `${data.powierzchnia_uzytkowa} m²` : undefined} />
+              <Row label="Kubatura" value={data.kubatura ? `${data.kubatura} m³` : undefined} />
+              <Row label="Kondygnacje naziem." value={data.kondygnacje_nadziemne} />
+              <Row label="Kondygnacje podziem." value={data.kondygnacje_podziemne} />
+            </div>
+          </div>
+        )}
+
+        {(data.inspection_date || data.next_inspection_date || data.owner_name || data.manager_name || data.investor_name || data.contractor_name || data.owner_address || data.owner_phone || data.owner_email || data.notes) && (
           <div>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Szczegóły</h3>
             <div className="rounded-lg bg-gray-50 border border-gray-200 px-3">
               <Row label="Data inspekcji" value={data.inspection_date} />
+              <Row label="Następna kontrola" value={data.next_inspection_date} />
               <Row label="Właściciel" value={data.owner_name} />
+              <Row label="Adres zarządcy" value={data.owner_address} />
+              <Row label="Telefon zarządcy" value={data.owner_phone} />
+              <Row label="E-mail zarządcy" value={data.owner_email} />
               <Row label="Administrator" value={data.manager_name} />
               <Row label="Inwestor" value={data.investor_name} />
               <Row label="Wykonawca" value={data.contractor_name} />

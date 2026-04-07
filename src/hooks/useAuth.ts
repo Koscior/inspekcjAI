@@ -8,7 +8,7 @@ import type { Profile } from '@/types/domain'
 
 export function useAuth() {
   const { user, session, profile, isLoading, isInitialized,
-          setProfile, setLoading, reset } = useAuthStore()
+          setUser, setSession, setProfile, setLoading, reset } = useAuthStore()
   const addToast = useUiStore((s) => s.addToast)
   const navigate = useNavigate()
 
@@ -30,7 +30,7 @@ export function useAuth() {
   // ── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
 
     if (error) {
@@ -38,8 +38,15 @@ export function useAuth() {
       throw error
     }
 
+    // Set user/session in store immediately so ProtectedRoute sees them
+    // before onAuthStateChange fires asynchronously
+    if (data.session) {
+      setSession(data.session)
+      setUser(data.session.user)
+    }
+
     navigate(ROUTES.DASHBOARD)
-  }, [setLoading, addToast, navigate])
+  }, [setLoading, setSession, setUser, addToast, navigate])
 
   // ── Register ───────────────────────────────────────────────────────────────
   const register = useCallback(async (email: string, password: string, fullName: string) => {

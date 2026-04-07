@@ -1,40 +1,24 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { ChevronLeft, Check, MapPin, Camera, Plus } from 'lucide-react'
 import { Input, Textarea, Select, Button, Card } from '@/components/ui'
 import { useCreateDefect, useNextDefectNumber } from '@/hooks/useDefects'
 import { useFloorPlans } from '@/hooks/useFloorPlans'
+import { useInspection } from '@/hooks/useInspections'
 import { useCreatePin } from '@/hooks/usePins'
 import { useAuthStore } from '@/store/authStore'
 import { useUiStore } from '@/store/uiStore'
 import { ROUTES, buildPath } from '@/router/routePaths'
-import { DEFECT_CATEGORIES, DEFECT_SEVERITY, DEFECT_TYPES, DEFECT_STATUSES } from '@/config/constants'
+import { DEFECT_CATEGORIES, DEFECT_SEVERITY, DEFECT_TYPES, DEFECT_STATUSES, FLOORPLAN_INSPECTION_TYPES } from '@/config/constants'
 import { PhotoUploader } from '@/components/photos/PhotoUploader'
 import { PhotoGrid } from '@/components/photos/PhotoGrid'
 import { PhotoViewer } from '@/components/photos/PhotoViewer'
 import { FloorPlanViewer } from '@/components/floor-plans/FloorPlanViewer'
 import { usePhotos } from '@/hooks/usePhotos'
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder'
-
-const schema = z.object({
-  title: z.string().min(2, 'Wymagane minimum 2 znaki'),
-  description: z.string().optional(),
-  type: z.enum(['usterka', 'uwaga', 'zalecenie']),
-  severity: z.enum(['critical', 'serious', 'minor']),
-  category: z.string().optional(),
-  custom_category: z.string().optional(),
-  status: z.enum(['open', 'in_progress', 'closed']),
-  contractor: z.string().optional(),
-  responsible_person: z.string().optional(),
-  deadline: z.string().optional(),
-  location_label: z.string().optional(),
-  floor_plan_id: z.string().optional(),
-})
-
-type FormData = z.infer<typeof schema>
+import { defectSchema, type DefectFormData } from './defectSchema'
 
 export default function NewDefectPage() {
   const { id: inspectionId } = useParams<{ id: string }>()
@@ -45,18 +29,24 @@ export default function NewDefectPage() {
   const createPin = useCreatePin()
   const { data: nextNumber } = useNextDefectNumber(inspectionId)
   const { data: floorPlans } = useFloorPlans(inspectionId)
+  const { data: inspection } = useInspection(inspectionId)
+  const hasFloorPlans = inspection
+    ? FLOORPLAN_INSPECTION_TYPES.includes(inspection.type as typeof FLOORPLAN_INSPECTION_TYPES[number])
+    : false
 
   const [createdDefectId, setCreatedDefectId] = useState<string | null>(null)
   const [createdNumber, setCreatedNumber] = useState<number | null>(null)
   const [pinLocation, setPinLocation] = useState<{ x: number; y: number } | null>(null)
   const [showPlanPicker, setShowPlanPicker] = useState(false)
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
+  const [highlightedPhotoId, setHighlightedPhotoId] = useState<string | null>(null)
+  const clearHighlight = useCallback(() => setHighlightedPhotoId(null), [])
 
   // Photos for newly created defect
   const { data: defectPhotos } = usePhotos(inspectionId, createdDefectId ? { defectId: createdDefectId } : undefined)
 
-  const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+  const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<DefectFormData>({
+    resolver: zodResolver(defectSchema),
     defaultValues: {
       type: 'usterka',
       severity: 'minor',
@@ -142,7 +132,12 @@ export default function NewDefectPage() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <label className="text-sm font-medium text-gray-700">Opis / Uwagi</label>
-              <VoiceRecorder onTranscription={(text) => setValue('description', text, { shouldDirty: true })} />
+              <VoiceRecorder
+                inspectionId={inspectionId!}
+                defectId={createdDefectId || undefined}
+                onTranscription={(text) => setValue('description', text, { shouldDirty: true })}
+                context="opis usterki budowlanej"
+              />
             </div>
             <textarea
               placeholder="Dodatkowy opis usterki..."
@@ -224,7 +219,7 @@ export default function NewDefectPage() {
         </Card>
 
         {/* Location on floor plan */}
-        {floorPlans && floorPlans.length > 0 && (
+        {hasFloorPlans && floorPlans && floorPlans.length > 0 && (
           <Card className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-700">
               <MapPin size={14} className="inline mr-1" />
@@ -359,11 +354,13 @@ export default function NewDefectPage() {
                 <Camera size={14} className="inline mr-1" />
                 Dodaj zdjęcia do usterki
               </h3>
-              <PhotoUploader inspectionId={inspectionId!} defectId={createdDefectId} />
+              <PhotoUploader inspectionId={inspectionId!} defectId={createdDefectId} onUploaded={(id) => setHighlightedPhotoId(id)} />
               {defectPhotos && defectPhotos.length > 0 && (
                 <PhotoGrid
                   photos={defectPhotos}
                   onPhotoClick={(p) => setViewerIndex(defectPhotos.indexOf(p))}
+                  highlightedPhotoId={highlightedPhotoId}
+                  onHighlightDone={clearHighlight}
                 />
               )}
             </Card>

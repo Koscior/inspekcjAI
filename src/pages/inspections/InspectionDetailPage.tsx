@@ -1,11 +1,13 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, MapPin, User, Trash2, Edit3, Phone, Mail,
 } from 'lucide-react'
 import { useInspection, useDeleteInspection } from '@/hooks/useInspections'
 import { INSPECTION_TYPES } from '@/config/constants'
-import { ROUTES } from '@/router/routePaths'
-import { Badge, StatusBadge, Card, Spinner, Button } from '@/components/ui'
+import { ROUTES, buildPath } from '@/router/routePaths'
+import { Badge, Card, Spinner, Button } from '@/components/ui'
+import { ConfirmModal } from '@/components/ui/Modal'
 import { InspectionNav } from '@/components/layout/InspectionNav'
 import { useUiStore } from '@/store/uiStore'
 import { format } from 'date-fns'
@@ -19,11 +21,10 @@ export default function InspectionDetailPage() {
   const deleteInspection = useDeleteInspection()
 
   const { data: inspection, isLoading, error } = useInspection(id)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   async function handleDelete() {
     if (!id) return
-    if (!window.confirm('Czy na pewno chcesz usunąć tę inspekcję? Tej operacji nie można cofnąć.')) return
-
     try {
       await deleteInspection.mutateAsync(id)
       addToast({ type: 'success', message: 'Inspekcja została usunięta' })
@@ -71,15 +72,14 @@ export default function InspectionDetailPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => addToast({ type: 'info', message: 'Edycja inspekcji — wkrótce dostępna' })}
+            onClick={() => navigate(buildPath(ROUTES.INSPECTION_EDIT, { id: id! }))}
           >
             <Edit3 size={15} />
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleDelete}
-            loading={deleteInspection.isPending}
+            onClick={() => setShowDeleteConfirm(true)}
             className="text-red-500 hover:text-red-700 hover:bg-red-50"
           >
             <Trash2 size={15} />
@@ -91,7 +91,6 @@ export default function InspectionDetailPage() {
       <div>
         <div className="flex flex-wrap items-center gap-2 mb-1">
           <Badge color="blue" size="sm">{INSPECTION_TYPES[insp.type as Inspection['type']]}</Badge>
-          <StatusBadge status={insp.status} />
           {insp.reference_number && (
             <span className="text-xs text-gray-400 font-mono">{insp.reference_number}</span>
           )}
@@ -150,6 +149,17 @@ export default function InspectionDetailPage() {
       <p className="text-xs text-gray-400 text-center">
         Utworzono {format(new Date(insp.created_at), 'd MMM yyyy, HH:mm', { locale: pl })}
       </p>
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Usuń inspekcję"
+        message="Czy na pewno chcesz usunąć tę inspekcję? Tej operacji nie można cofnąć."
+        confirmLabel="Usuń"
+        danger
+        loading={deleteInspection.isPending}
+      />
     </div>
   )
 }

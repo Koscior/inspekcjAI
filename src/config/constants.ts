@@ -4,6 +4,7 @@ export const APP_URL = import.meta.env.VITE_APP_URL || 'http://localhost:5173'
 export const INSPECTION_TYPES = {
   roczny: 'Przegląd roczny',
   piecioletni: 'Przegląd pięcioletni',
+  polroczny: 'Przegląd półroczny',
   plac_zabaw: 'Inspekcja placu zabaw',
   odbior_mieszkania: 'Odbiór mieszkania/domu',
   ogolna: 'Inspekcja ogólna',
@@ -50,10 +51,13 @@ export const DEFECT_STATUSES = {
 } as const
 
 /** Inspection types that support checklist */
-export const CHECKLIST_INSPECTION_TYPES = ['roczny', 'piecioletni', 'plac_zabaw'] as const
+export const CHECKLIST_INSPECTION_TYPES = ['roczny', 'piecioletni', 'polroczny', 'plac_zabaw'] as const
 
 /** Inspection types that support building documentation section */
-export const BUILDING_DOCS_INSPECTION_TYPES = ['roczny', 'piecioletni'] as const
+export const BUILDING_DOCS_INSPECTION_TYPES = ['roczny', 'piecioletni', 'polroczny', 'plac_zabaw'] as const
+
+/** Inspection types that support floor plans */
+export const FLOORPLAN_INSPECTION_TYPES = ['odbior_mieszkania', 'ogolna'] as const
 
 export const BUILDING_CONSTRUCTION_TYPES = [
   'żelbetowa',

@@ -1,14 +1,15 @@
 import { NavLink } from 'react-router-dom'
 import { clsx } from 'clsx'
-import { LayoutDashboard, ClipboardList, Users, FileText, Settings } from 'lucide-react'
+import { LayoutDashboard, ClipboardList, Users, FileText, Building2, Settings } from 'lucide-react'
 import { ROUTES } from '@/router/routePaths'
 
 const items = [
-  { to: ROUTES.DASHBOARD,   icon: LayoutDashboard, label: 'Panel' },
-  { to: ROUTES.INSPECTIONS, icon: ClipboardList,   label: 'Inspekcje' },
-  { to: ROUTES.CLIENTS,     icon: Users,           label: 'Klienci' },
-  { to: ROUTES.REPORTS,     icon: FileText,        label: 'Raporty' },
-  { to: ROUTES.SETTINGS,    icon: Settings,        label: 'Ustawienia' },
+  { to: ROUTES.DASHBOARD,       icon: LayoutDashboard, label: 'Panel' },
+  { to: ROUTES.INSPECTIONS,     icon: ClipboardList,   label: 'Inspekcje' },
+  { to: ROUTES.CLIENTS,         icon: Users,           label: 'Klienci' },
+  { to: ROUTES.REPORTS,         icon: FileText,        label: 'Raporty' },
+  { to: ROUTES.COMPANY_PROFILE, icon: Building2,       label: 'Profil Firmy' },
+  { to: ROUTES.SETTINGS,        icon: Settings,        label: 'Ustawienia' },
 ] as const
 
 export function MobileNav() {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Camera } from 'lucide-react'
 import { usePhotos, useDeletePhoto } from '@/hooks/usePhotos'
@@ -30,6 +30,8 @@ export default function PhotosPage() {
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
+  const [highlightedPhotoId, setHighlightedPhotoId] = useState<string | null>(null)
+  const clearHighlight = useCallback(() => setHighlightedPhotoId(null), [])
 
   const photos = (allPhotos ?? []).filter((p) => {
     if (activeTab === 'defects') return !!p.defect_id
@@ -67,7 +69,7 @@ export default function PhotosPage() {
 
       {/* Upload */}
       <div className="mb-4">
-        <PhotoUploader inspectionId={inspectionId!} />
+        <PhotoUploader inspectionId={inspectionId!} onUploaded={(id) => setHighlightedPhotoId(id)} />
       </div>
 
       {/* Filter tabs */}
@@ -118,6 +120,8 @@ export default function PhotosPage() {
           columns={4}
           onPhotoClick={(photo) => setViewerIndex(photos.indexOf(photo))}
           onDelete={handleDelete}
+          highlightedPhotoId={highlightedPhotoId}
+          onHighlightDone={clearHighlight}
         />
       )}
 

@@ -2,7 +2,7 @@
 
 > Dokument opisuje wszystkie fazy budowy aplikacji InspekcjAI.
 > Każda faza zawiera konkretne zadania, pliki do stworzenia i kryteria akceptacji.
-> Aktualizacja: 2026-03-26
+> Aktualizacja: 2026-04-06
 
 ---
 
@@ -119,7 +119,7 @@
 - [x] **Sekcja info:** dane obiektu, klient, daty
 - [x] **Quick actions (kafelki/przyciski):** Checklist, Usterki, Zdjęcia, Plany, Raport, Podpis
 - [x] **Przycisk usunięcia** z potwierdzeniem
-- [ ] **Przycisk edycji** danych inspekcji — 💡 nice-to-have (Faza 3+)
+- [x] **Przycisk edycji** danych inspekcji — `/inspections/:id/edit` (wizard wielokrokowy)
 
 ### 2.6 Lista klientów — `/clients` ✅
 - [x] Lista klientów (Card layout)
@@ -140,6 +140,7 @@
 - [x] Dane kontaktowe z klikalnymi linkami (tel, email, adres)
 - [x] **Historia inspekcji:** lista inspekcji tego klienta
 - [x] Przycisk usunięcia
+- [x] Edycja klienta — `/clients/:id/edit`
 
 ### 2.9 Aktualizacja Dashboard — `/` ✅
 - [x] Widgety z prawdziwymi danymi:
@@ -201,6 +202,7 @@
 - [x] Wykonawca, osoba odpowiedzialna, termin naprawy
 - [x] Lokalizacja na planie — wybór planu + kliknięcie → pinezka
 - [x] Po zapisie → redirect do listy usterek
+- [x] Edycja usterki — `/inspections/:id/defects/:defectId/edit`
 - [ ] Dyktafon → AI (Faza 4)
 
 ### 3.5 Zdjęcia z annotacjami
@@ -253,19 +255,20 @@
 
 ---
 
-## FAZA 4 — AI + Generowanie PDF ⬜
+## FAZA 4 — AI + Generowanie PDF 🔨
 
 > "Efekt wow" — głos→tekst profesjonalny, automatyczny raport
 
-### 4.1 Dyktafon — nagrywanie głosu
-- [ ] Komponent `VoiceRecorder` (przycisk mikrofonu)
-- [ ] Nagrywanie audio przez Web Audio API / MediaRecorder
-- [ ] Wizualizacja fal dźwiękowych podczas nagrywania
-- [ ] Przycisk stop → upload do Supabase Storage (bucket: voice-notes)
-- [ ] Odtwarzanie nagrania (mini player)
-- [ ] Zintegrowany w: opisy usterek, uwagi do checklisty, notatki
+### 4.1 Dyktafon — nagrywanie głosu 🔨
+- [x] Komponent `VoiceRecorder` (przycisk mikrofonu)
+- [x] Nagrywanie audio przez Web Audio API / MediaRecorder
+- [x] Wizualizacja fal dźwiękowych podczas nagrywania
+- [x] Przycisk stop → upload do Supabase Storage (bucket: voice-notes)
+- [x] Odtwarzanie nagrania (mini player)
+- [x] Zintegrowany w: opisy usterek, uwagi do checklisty, notatki
+- [x] `useVoiceNotes` hook
 
-### 4.2 AI — Transkrypcja + Profesjonalizacja tekstu
+### 4.2 AI — Transkrypcja + Profesjonalizacja tekstu ⬜
 - [ ] Supabase Edge Function: `ai-proxy`
   - Endpoint: `/transcribe` — Whisper API (audio → tekst surowy)
   - Endpoint: `/professionalize` — GPT-4o (tekst potoczny → tekst techniczny/formalny)
@@ -281,118 +284,81 @@
 - [ ] Wskaźnik "AI przetwarza..." (loading state)
 - [ ] Zapisanie w bazie: `raw_transcription` + `professional_transcription`
 
-### 4.3 Generowanie PDF — Raport TECHNICZNY
-- [ ] Technologia: `@react-pdf/renderer` (client-side) lub Supabase Edge Function (server-side)
-- [ ] **Strona tytułowa:**
-  - Logo firmy (z Settings/branding)
-  - Nazwa projektu
-  - Adres obiektu
-  - Klient (nazwa, firma)
-  - Data inspekcji
+### 4.3 Generowanie PDF — Raport TECHNICZNY ✅
+- [x] Technologia: `@react-pdf/renderer` (client-side)
+- [x] **Strona tytułowa:**
+  - Logo firmy (z CompanyProfile/branding)
+  - Nazwa projektu, adres obiektu, klient, daty
   - Inspektor (imię, nazwisko, firma)
   - Liczba zgłoszeń
-  - Zdjęcie obiektu (opcjonalnie)
-- [ ] **Plan budynku z pinezkami** (per piętro/rzut):
-  - Renderowanie planu z naniesionymi pinezkami (numery)
-  - Legenda pinezek
-- [ ] **Usterki pogrupowane wg KATEGORII:**
-  - Nagłówek kategorii + liczba zgłoszeń
-  - Dla każdej usterki:
-    - `#numer` + tytuł
-    - Tabela: Kategoria | Typ | Opis
-    - Tabela: Wykonawca | Data zakończenia
-    - Fragment planu z lokalizacją (crop wokół pinezki)
-    - Zdjęcia annotowane (Fot. X, Fot. Y) — max 2 per wiersz
-- [ ] **Dokumentacja fotograficzna** (ostatnia sekcja):
-  - Wszystkie zdjęcia z numerami (Fot. 1 — Fot. N)
-  - 2-4 zdjęcia na stronę
-  - Podpis pod każdym zdjęciem
+- [x] **Plan budynku z pinezkami** (per piętro/rzut)
+- [x] **Usterki pogrupowane wg KATEGORII** z numerowanymi zdjęciami
+- [x] **Dokumentacja fotograficzna** (Fot. 1 — Fot. N)
 
-### 4.4 Generowanie PDF — Raport ZADAŃ
-- [ ] Rozszerzenie raportu technicznego o:
-  - **Strona tytułowa:** + Numer referencyjny, Inwestor, Generalny wykonawca, Dane kontaktowe inspektora, Data rozpoczęcia/zakończenia
-  - **Zadania z rozszerzonym widokiem:**
-    - UTWORZONO / OSTATNIA AKTUALIZACJA
-    - TYP ZGŁOSZENIA
-    - ZGŁASZAJĄCY (imię + firma)
-    - ODPOWIEDZIALNY
-    - WYKONAWCA
-    - STATUS (Nowy / W trakcie / Zakończone) z badge kolorem
-    - DATA ROZPOCZĘCIA / DATA ZAKOŃCZENIA
-    - LOKALIZACJA (fragment planu z pinezką)
-    - UWAGI
-    - Zdjęcia
+### 4.4 Generowanie PDF — Raport ZADAŃ ✅
+- [x] Rozszerzenie raportu technicznego o:
+  - Numer referencyjny, Inwestor, dane kontaktowe inspektora
+  - ZGŁASZAJĄCY, ODPOWIEDZIALNY, WYKONAWCA
+  - STATUS (Nowy / W trakcie / Zakończone) z badge kolorem
+  - DATA ROZPOCZĘCIA / DATA ZAKOŃCZENIA
+  - LOKALIZACJA, UWAGI, Zdjęcia
 
-### 4.5 Generowanie PDF — Protokół PRZEGLĄDU
-- [ ] Najbardziej złożony raport (wymagany prawem):
-  - **Nagłówek formalno-prawny:** Nr protokołu, podstawa prawna, zakres, daty
-  - **Osoba przeprowadzająca kontrolę:** dane inspektora + certyfikaty
-  - **Informacje o budynku:** rodzaj, adres, zdjęcie, właściciel, administrator, konstrukcja
-  - **Przegląd poprzedniej kontroli:** wnioski, roboty, zgłoszenia
-  - **Dokumentacja budynku:** status kompletności
-  - **Checklist elementów:** tabela z kolumnami: Element | Stan | Uwagi | Fot.
-  - **Pokrycie dachowe:** tabela
-  - **Urządzenia ppoż:** tabela
-  - **Ochrona środowiska:** tabela
-  - **Instalacje** (jeśli 5-letni): tabela
-  - **Kryteria oceny:** legenda stanów
-  - **Dokumentacja fotograficzna:** setki zdjęć z numeracją
-  - **Podpisy:** inspektor + klient/zarządca (z canvas)
+### 4.5 Generowanie PDF — Protokół PRZEGLĄDU ✅
+- [x] Nagłówek formalno-prawny (Nr protokołu, podstawa prawna, daty)
+- [x] Osoba przeprowadzająca kontrolę (dane inspektora + certyfikaty)
+- [x] Informacje o budynku (rodzaj, adres, właściciel, konstrukcja)
+- [x] Przegląd poprzedniej kontroli (wnioski, roboty, zgłoszenia)
+- [x] Dokumentacja budynku (status kompletności)
+- [x] Checklist elementów (tabela: Element | Stan | Uwagi | Fot.)
+- [x] Dokumentacja fotograficzna z numeracją
+- [x] Podpisy (inspektor + klient)
 
-### 4.6 Podpis klienta — `/inspections/:id/signature`
-- [ ] Canvas na pełnym ekranie (landscape na mobile)
-- [ ] Rysowanie palcem / rysikiem
-- [ ] Przycisk "Wyczyść" i "Zatwierdź"
-- [ ] Podpis inspektora (z Settings — jednorazowe ustawienie)
-- [ ] Podpis klienta (na każdą inspekcję)
-- [ ] Zapisanie jako PNG → Supabase Storage
-- [ ] Wstawienie do raportu PDF
+### 4.6 Podpis klienta — `/inspections/:id/signature` ✅
+- [x] Canvas na pełnym ekranie (landscape na mobile)
+- [x] Rysowanie palcem / rysikiem
+- [x] Przycisk "Wyczyść" i "Zatwierdź"
+- [x] Podpis inspektora (z CompanyProfile)
+- [x] Podpis klienta (na każdą inspekcję)
+- [x] Zapisanie jako PNG → Supabase Storage
+- [x] Wstawienie do raportu PDF
 
-### 4.7 Podgląd i wysyłka — `/inspections/:id/report`
-- [ ] Wybór typu raportu (Techniczny / Zadań / Protokół przeglądu)
-- [ ] Podgląd wygenerowanego PDF (in-app viewer)
-- [ ] Przycisk "Pobierz PDF"
-- [ ] Przycisk "Wyślij mailem" → modal z adresem email klienta
-- [ ] Wysyłka przez Supabase Edge Function (Resend / SendGrid)
-- [ ] Automatyczna numeracja: `INS/2026/001`
-- [ ] Zapisanie PDF w Supabase Storage (bucket: report-pdfs)
-- [ ] Historia wygenerowanych raportów
+### 4.7 Podgląd i wysyłka — `/inspections/:id/report` ✅
+- [x] Wybór typu raportu (Techniczny / Zadań / Protokół przeglądu)
+- [x] Podgląd wygenerowanego PDF (in-app viewer)
+- [x] Przycisk "Pobierz PDF"
+- [x] Automatyczna numeracja: `INS/2026/001`
+- [x] Zapisanie PDF w Supabase Storage (bucket: report-pdfs)
+- [x] Historia wygenerowanych raportów (`useReports` hook)
+- [ ] Przycisk "Wyślij mailem" → Supabase Edge Function (Resend / SendGrid)
 
 ### Kryteria akceptacji FAZY 4:
-- [ ] Dyktafon nagrywa i odtwarza głos
+- [x] Dyktafon nagrywa i odtwarza głos
 - [ ] AI zamienia mowę potoczną na profesjonalny tekst techniczny
-- [ ] Raport Techniczny generuje się poprawnie z danymi inspekcji
-- [ ] Raport Zadań generuje się poprawnie
-- [ ] Protokół przeglądu jest zgodny z Prawem Budowlanym
-- [ ] Podpisy (inspektor + klient) są w raporcie
-- [ ] PDF można pobrać i wysłać mailem
-- [ ] Zdjęcia w raporcie mają annotacje i numerację
+- [x] Raport Techniczny generuje się poprawnie z danymi inspekcji
+- [x] Raport Zadań generuje się poprawnie
+- [x] Protokół przeglądu jest zgodny z Prawem Budowlanym
+- [x] Podpisy (inspektor + klient) są w raporcie
+- [x] PDF można pobrać
+- [x] Zdjęcia w raporcie mają annotacje i numerację
+- [ ] PDF można wysłać mailem
 
 ---
 
-## FAZA 5 — Settings, Branding, Subskrypcje ⬜
+## FAZA 5 — Settings, Branding, Subskrypcje 🔨
 
 > Personalizacja, monetyzacja, profesjonalny wygląd
 
-### 5.1 Settings — `/settings`
-- [ ] **Dane osobowe:** imię, nazwisko, email, telefon
-- [ ] **Dane firmy:** nazwa firmy, NIP, adres, strona www
-- [ ] **Certyfikaty / uprawnienia:**
+### 5.1 Company Profile — `/company-profile` ✅ + Settings — `/settings` 🔨
+- [x] **Dane firmy:** nazwa, NIP, adres, strona www (`CompanyProfilePage`)
+- [x] **Certyfikaty / uprawnienia:**
   - Nr uprawnień budowlanych
   - Nr członkowski POIIB (Polska Izba Inżynierów Budownictwa)
   - Specjalizacja
-  - Upload skanów certyfikatów (opcjonalnie)
-- [ ] **Branding:**
-  - Upload logo firmy (wyświetlane na raportach)
-  - Kolory firmowe (opcjonalnie — accent w raporcie)
-- [ ] **Podpis elektroniczny:**
-  - Canvas do narysowania podpisu
-  - Podgląd zapisanego podpisu
-  - Możliwość zmiany
-- [ ] **Preferencje:**
-  - Domyślny typ raportu
-  - Domyślna numeracja (prefix)
-  - Język (na przyszłość)
+- [x] **Branding:** Upload logo firmy (wyświetlane na raportach)
+- [x] **Podpis elektroniczny:** Canvas, podgląd, zmiana
+- [x] `useProfile` hook
+- [ ] **Dane osobowe w Settings:** imię, nazwisko, email, telefon (placeholder)
+- [ ] **Preferencje:** domyślny typ raportu, domyślna numeracja, język
 
 ### 5.2 Subskrypcje — `/subscription`
 - [ ] Wyświetlenie aktualnego planu (Free / Pro / Company)
@@ -424,13 +390,13 @@
 - [ ] Dark mode (💡 nice-to-have)
 - [ ] Onboarding tour dla nowych użytkowników (💡 nice-to-have)
 
-### 5.5 Strona raportów — `/reports`
-- [ ] Lista wszystkich wygenerowanych raportów
-- [ ] Filtrowanie: typ raportu, inspekcja, klient, data
-- [ ] Podgląd PDF
-- [ ] Ponowne wysłanie mailem
-- [ ] Pobranie PDF
-- [ ] Usunięcie raportu
+### 5.5 Strona raportów — `/reports` ✅
+- [x] Lista wszystkich wygenerowanych raportów
+- [x] Filtrowanie: typ raportu, inspekcja, klient, data
+- [x] Podgląd PDF
+- [x] Pobranie PDF
+- [x] Usunięcie raportu
+- [ ] Ponowne wysłanie mailem (wymaga Edge Function z 4.7)
 
 ### Kryteria akceptacji FAZY 5:
 - [ ] Inspektor może ustawić logo, certyfikaty, podpis — i widzi je w raportach
@@ -520,18 +486,19 @@
 
 ## Podsumowanie faz i szacowany czas
 
-| Faza | Opis | Szacowany czas | Zależności |
-|------|------|---------------|------------|
-| **FAZA 1** ✅ | Fundament | ~1 tydzień | — |
-| **FAZA 2** ✅ | CRUD inspekcji i klientów | ~2 tygodnie | Supabase projekt |
-| **FAZA 3** ⬜ | Usterki, zdjęcia, plany, checklist | ~3 tygodnie | Faza 2 |
-| **FAZA 4** ⬜ | AI + generowanie PDF | ~3 tygodnie | Faza 3 + OpenAI API key |
-| **FAZA 5** ⬜ | Settings, branding, subskrypcje | ~2 tygodnie | Faza 4 + Stripe |
-| **FAZA 6** ⬜ | Google Play / iOS | ~2 tygodnie | Faza 5 |
-| **FAZA 7** 💡 | Rozwój | ongoing | Faza 6 |
+| Faza | Opis | Status | Zależności |
+|------|------|--------|------------|
+| **FAZA 1** | Fundament | ✅ DONE | — |
+| **FAZA 2** | CRUD inspekcji i klientów | ✅ DONE | Supabase projekt |
+| **FAZA 3** | Usterki, zdjęcia, plany, checklist | ✅ DONE | Faza 2 |
+| **FAZA 4** | AI + generowanie PDF | 🔨 IN PROGRESS | Faza 3 + OpenAI API key |
+| **FAZA 5** | Settings, branding, subskrypcje | 🔨 IN PROGRESS | Faza 4 + Stripe |
+| **FAZA 6** | Google Play / iOS | ⬜ TODO | Faza 5 |
+| **FAZA 7** | Rozwój | 💡 NICE-TO-HAVE | Faza 6 |
 
-**Łącznie do MVP (Fazy 1-5):** ~11 tygodni
-**Łącznie do publikacji (Fazy 1-6):** ~13 tygodni
+**Pozostałe do MVP (Fazy 4-5):**
+- Faza 4: AI Edge Function (Whisper + GPT-4o) + wysyłka mailem
+- Faza 5: Stripe + settings użytkownika + UX polish
 
 ---
 

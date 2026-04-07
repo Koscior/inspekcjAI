@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import {
   LayoutDashboard, ClipboardList, Users, FileText,
-  Settings, CreditCard, LogOut, X,
+  Building2, Settings, CreditCard, LogOut, X,
 } from 'lucide-react'
 import { ROUTES } from '@/router/routePaths'
 import { useAuthStore } from '@/store/authStore'
@@ -10,10 +10,11 @@ import { useUiStore } from '@/store/uiStore'
 import { supabase } from '@/config/supabase'
 
 const navItems = [
-  { to: ROUTES.DASHBOARD,    icon: LayoutDashboard, label: 'Panel główny' },
-  { to: ROUTES.INSPECTIONS,  icon: ClipboardList,   label: 'Inspekcje' },
-  { to: ROUTES.CLIENTS,      icon: Users,           label: 'Klienci' },
-  { to: ROUTES.REPORTS,      icon: FileText,        label: 'Raporty' },
+  { to: ROUTES.DASHBOARD,       icon: LayoutDashboard, label: 'Panel główny' },
+  { to: ROUTES.INSPECTIONS,     icon: ClipboardList,   label: 'Inspekcje' },
+  { to: ROUTES.CLIENTS,         icon: Users,           label: 'Klienci' },
+  { to: ROUTES.REPORTS,         icon: FileText,        label: 'Raporty' },
+  { to: ROUTES.COMPANY_PROFILE, icon: Building2,       label: 'Profil Firmy' },
 ] as const
 
 const bottomItems = [

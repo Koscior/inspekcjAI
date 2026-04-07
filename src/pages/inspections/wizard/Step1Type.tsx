@@ -23,6 +23,14 @@ const OPTIONS: TypeOption[] = [
     legal: 'Art. 62 ust. 1 pkt 1 PB',
   },
   {
+    value: 'polroczny',
+    label: 'Przegląd półroczny',
+    description: 'Przegląd co 6 miesięcy dla wybranych obiektów',
+    icon: <ClipboardList size={24} />,
+    color: 'blue',
+    legal: 'Art. 62 ust. 1 pkt 1 PB',
+  },
+  {
     value: 'piecioletni',
     label: 'Przegląd pięcioletni',
     description: 'Rozszerzony przegląd z kontrolą instalacji budynku',

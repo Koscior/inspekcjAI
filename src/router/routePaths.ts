@@ -10,19 +10,23 @@ export const ROUTES = {
   // Clients
   CLIENTS:          '/clients',
   CLIENT_DETAIL:    '/clients/:id',
+  CLIENT_EDIT:      '/clients/:id/edit',
   CLIENT_NEW:       '/clients/new',
 
   // Inspections
   INSPECTIONS:           '/inspections',
   INSPECTION_NEW:        '/inspections/new',
   INSPECTION_DETAIL:     '/inspections/:id',
+  INSPECTION_EDIT:       '/inspections/:id/edit',
   INSPECTION_DEFECTS:       '/inspections/:id/defects',
   INSPECTION_DEFECT_NEW:    '/inspections/:id/defects/new',
   INSPECTION_DEFECT_DETAIL: '/inspections/:id/defects/:defectId',
+  INSPECTION_DEFECT_EDIT:   '/inspections/:id/defects/:defectId/edit',
   INSPECTION_FLOORPLANS:    '/inspections/:id/floor-plans',
   INSPECTION_PHOTOS:     '/inspections/:id/photos',
   INSPECTION_CHECKLIST:  '/inspections/:id/checklist',
   INSPECTION_BUILDING_DOCS: '/inspections/:id/building-docs',
+  INSPECTION_SIGNATURE:  '/inspections/:id/signature',
   INSPECTION_REPORT:     '/inspections/:id/report',
 
   // Photo annotation
@@ -31,6 +35,9 @@ export const ROUTES = {
   // Reports
   REPORTS:        '/reports',
   REPORT_VIEW:    '/reports/:id',
+
+  // Company profile
+  COMPANY_PROFILE: '/company-profile',
 
   // Settings
   SETTINGS:             '/settings',

@@ -1,30 +1,20 @@
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { ChevronLeft } from 'lucide-react'
 import { Input, Textarea, Button } from '@/components/ui'
 import { useCreateClient } from '@/hooks/useClients'
 import { ROUTES, buildPath } from '@/router/routePaths'
 import { useUiStore } from '@/store/uiStore'
-
-const schema = z.object({
-  full_name:  z.string().min(2, 'Wymagane minimum 2 znaki'),
-  email:      z.string().email('Nieprawidłowy adres email').or(z.literal('')).optional(),
-  phone:      z.string().optional(),
-  address:    z.string().optional(),
-  notes:      z.string().optional(),
-})
-
-type FormData = z.infer<typeof schema>
+import { clientSchema, type ClientFormData } from './clientSchema'
 
 export default function NewClientPage() {
   const navigate = useNavigate()
   const addToast = useUiStore((s) => s.addToast)
   const createClient = useCreateClient()
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+  const { register, handleSubmit, formState: { errors } } = useForm<ClientFormData>({
+    resolver: zodResolver(clientSchema),
   })
 
   const onSubmit = handleSubmit(

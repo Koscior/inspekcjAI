@@ -47,6 +47,9 @@ export interface Inspection {
   building_type: string | null
   construction_type: string | null
   owner_name: string | null
+  owner_address: string | null
+  owner_phone: string | null
+  owner_email: string | null
   manager_name: string | null
   investor_name: string | null
   contractor_name: string | null
@@ -60,6 +63,27 @@ export interface Inspection {
   usage_docs_status: 'complete' | 'incomplete' | 'missing' | null
   building_log_status: 'maintained' | 'incomplete' | 'missing' | null
   notes: string | null
+  powierzchnia_uzytkowa: number | null
+  powierzchnia_zabudowy: number | null
+  kubatura: number | null
+  kondygnacje_podziemne: number | null
+  kondygnacje_nadziemne: number | null
+  cover_photo_path: string | null
+  wnioski_uwagi_zalecenia: string | null
+  pilnosc_1: string | null
+  pilnosc_2: string | null
+  pilnosc_3: string | null
+  ocena_stanu_tekst: string | null
+  ocena_nadaje_sie: boolean | null
+  ocena_stwierdzono_uszkodzenia: boolean | null
+  pg_liczba_urzadzen: string | null
+  pg_rodzaje_urzadzen: string | null
+  pg_material_urzadzen: string | null
+  pg_nawierzchnia: string | null
+  pg_nawierzchnia_pod_urzadzeniami: string | null
+  pg_mocowanie_urzadzen: string | null
+  pg_ogrodzenie: string | null
+  pg_naslonecznienie: string | null
   created_at: string
   updated_at: string
   // Relations (loaded on demand)
@@ -152,6 +176,7 @@ export interface ChecklistTemplate {
   element_name: string                 // np. "ściany nośne"
   legal_basis: string | null           // Art. 62 pkt 1...
   sort_order: number
+  field_type: 'text_photos' | 'yesno_desc_photos' | 'yesno'
 }
 
 // ─── ChecklistItem ────────────────────────────────────────────────────────────
@@ -167,6 +192,8 @@ export interface ChecklistItem {
   notes: string | null
   photo_refs: string[]                 // photo ids
   sort_order: number
+  yesno_value: boolean | null
+  field_type: 'text_photos' | 'yesno_desc_photos' | 'yesno'
   // Relations
   template?: ChecklistTemplate
 }

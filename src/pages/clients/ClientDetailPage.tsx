@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Mail, Phone, MapPin, User, ClipboardList,
@@ -6,6 +7,7 @@ import {
 import { useClient, useDeleteClient } from '@/hooks/useClients'
 import { ROUTES, buildPath } from '@/router/routePaths'
 import { Badge, StatusBadge, Card, Spinner, Button } from '@/components/ui'
+import { ConfirmModal } from '@/components/ui/Modal'
 import { useUiStore } from '@/store/uiStore'
 import { INSPECTION_TYPES } from '@/config/constants'
 import { format } from 'date-fns'
@@ -19,10 +21,10 @@ export default function ClientDetailPage() {
   const deleteClient = useDeleteClient()
 
   const { data: client, isLoading, error } = useClient(id)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   async function handleDelete() {
     if (!id) return
-    if (!window.confirm('Czy na pewno chcesz usunąć tego klienta?')) return
     try {
       await deleteClient.mutateAsync(id)
       addToast({ type: 'success', message: 'Klient został usunięty' })
@@ -95,15 +97,14 @@ export default function ClientDetailPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => addToast({ type: 'info', message: 'Edycja klienta — wkrótce' })}
+              onClick={() => navigate(buildPath(ROUTES.CLIENT_EDIT, { id: id! }))}
             >
               <Edit3 size={15} />
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleDelete}
-              loading={deleteClient.isPending}
+              onClick={() => setShowDeleteConfirm(true)}
               className="text-red-500 hover:text-red-700 hover:bg-red-50"
             >
               <Trash2 size={15} />
@@ -194,6 +195,17 @@ export default function ClientDetailPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Usuń klienta"
+        message="Czy na pewno chcesz usunąć tego klienta? Tej operacji nie można cofnąć."
+        confirmLabel="Usuń"
+        danger
+        loading={deleteClient.isPending}
+      />
     </div>
   )
 }

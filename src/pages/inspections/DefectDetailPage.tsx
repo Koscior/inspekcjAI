@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, Trash2, Edit3, MapPin } from 'lucide-react'
 import { useDefect, useDeleteDefect, useUpdateDefect } from '@/hooks/useDefects'
@@ -30,6 +30,8 @@ export default function DefectDetailPage() {
 
   const [viewerPhoto, setViewerPhoto] = useState<number | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [highlightedPhotoId, setHighlightedPhotoId] = useState<string | null>(null)
+  const clearHighlight = useCallback(() => setHighlightedPhotoId(null), [])
 
   async function handleDelete() {
     if (!inspectionId || !defectId) return
@@ -106,7 +108,7 @@ export default function DefectDetailPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => addToast({ type: 'info', message: 'Edycja — wkrótce' })}
+                onClick={() => navigate(buildPath(ROUTES.INSPECTION_DEFECT_EDIT, { id: inspectionId!, defectId: defectId! }))}
               >
                 <Edit3 size={15} />
               </Button>
@@ -174,13 +176,15 @@ export default function DefectDetailPage() {
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
           Zdjęcia {photos?.length ? `(${photos.length})` : ''}
         </h3>
-        <PhotoUploader inspectionId={inspectionId!} defectId={defectId} />
+        <PhotoUploader inspectionId={inspectionId!} defectId={defectId} onUploaded={(id) => setHighlightedPhotoId(id)} />
         {photos && photos.length > 0 && (
           <PhotoGrid
             photos={photos}
             onPhotoClick={(p) => setViewerPhoto(photos.indexOf(p))}
             onDelete={handleDeletePhoto}
             onAiAnalyze={() => addToast({ type: 'info', message: 'AI analiza zdjęcia — wkrótce' })}
+            highlightedPhotoId={highlightedPhotoId}
+            onHighlightDone={clearHighlight}
           />
         )}
       </Card>

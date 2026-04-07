@@ -5,10 +5,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import { Button } from '@/components/ui'
-import { useCreateInspection } from '@/hooks/useInspections'
+import { useCreateInspection, useUpdateInspection } from '@/hooks/useInspections'
 import { useCreateClient } from '@/hooks/useClients'
 import { ROUTES, buildPath } from '@/router/routePaths'
 import { useUiStore } from '@/store/uiStore'
+import { useAuthStore } from '@/store/authStore'
+import { supabase } from '@/config/supabase'
+import { STORAGE_BUCKETS } from '@/config/constants'
+import { compressImage } from '@/lib/imageUtils'
 import { Step1Type } from './wizard/Step1Type'
 import { Step2Building } from './wizard/Step2Building'
 import { Step3Client } from './wizard/Step3Client'
@@ -20,7 +24,7 @@ import type { Inspection } from '@/types/database.types'
 
 export const wizardSchema = z.object({
   // Step 1
-  type: z.enum(['roczny', 'piecioletni', 'plac_zabaw', 'odbior_mieszkania', 'ogolna']),
+  type: z.enum(['roczny', 'piecioletni', 'polroczny', 'plac_zabaw', 'odbior_mieszkania', 'ogolna']),
 
   // Step 2
   title: z.string().min(2, 'Wymagane minimum 2 znaki'),
@@ -31,6 +35,23 @@ export const wizardSchema = z.object({
   year_built: z.string().optional(),
   floor_or_unit: z.string().optional(),
 
+  // Step 2 — technical data (conditional per type)
+  powierzchnia_zabudowy: z.string().optional(),
+  powierzchnia_uzytkowa: z.string().optional(),
+  kubatura: z.string().optional(),
+  kondygnacje_nadziemne: z.string().optional(),
+  kondygnacje_podziemne: z.string().optional(),
+
+  // Step 2 — playground-specific fields
+  pg_liczba_urzadzen: z.string().optional(),
+  pg_rodzaje_urzadzen: z.string().optional(),
+  pg_material_urzadzen: z.string().optional(),
+  pg_nawierzchnia: z.string().optional(),
+  pg_nawierzchnia_pod_urzadzeniami: z.string().optional(),
+  pg_mocowanie_urzadzen: z.string().optional(),
+  pg_ogrodzenie: z.string().optional(),
+  pg_naslonecznienie: z.string().optional(),
+
   // Step 3
   client_mode: z.enum(['existing', 'new', 'none']),
   client_id: z.string().optional(),
@@ -40,10 +61,14 @@ export const wizardSchema = z.object({
 
   // Step 4 (conditional)
   owner_name: z.string().optional(),
+  owner_address: z.string().optional(),
+  owner_phone: z.string().optional(),
+  owner_email: z.string().optional(),
   manager_name: z.string().optional(),
   investor_name: z.string().optional(),
   contractor_name: z.string().optional(),
   inspection_date: z.string().optional(),
+  next_inspection_date: z.string().optional(),
   notes: z.string().optional(),
 })
 
@@ -64,8 +89,11 @@ const STEPS = [
 export default function NewInspectionPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
+  const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null)
   const addToast = useUiStore((s) => s.addToast)
+  const user = useAuthStore((s) => s.user)
   const createInspection = useCreateInspection()
+  const updateInspection = useUpdateInspection()
   const createClient = useCreateClient()
 
   const methods = useForm<WizardData>({
@@ -126,13 +154,49 @@ export default function NewInspectionPage() {
           construction_type: data.construction_type || null,
           client_id: clientId || null,
           owner_name: data.owner_name || null,
+          owner_address: data.owner_address || null,
+          owner_phone: data.owner_phone || null,
+          owner_email: data.owner_email || null,
           manager_name: data.manager_name || null,
           investor_name: data.investor_name || null,
           contractor_name: data.contractor_name || null,
           inspection_date: data.inspection_date || null,
+          next_inspection_date: data.next_inspection_date || null,
+          powierzchnia_zabudowy: data.powierzchnia_zabudowy ? Number(data.powierzchnia_zabudowy) : null,
+          powierzchnia_uzytkowa: data.powierzchnia_uzytkowa ? Number(data.powierzchnia_uzytkowa) : null,
+          kubatura: data.kubatura ? Number(data.kubatura) : null,
+          kondygnacje_nadziemne: data.kondygnacje_nadziemne ? Number(data.kondygnacje_nadziemne) : null,
+          kondygnacje_podziemne: data.kondygnacje_podziemne ? Number(data.kondygnacje_podziemne) : null,
           notes: data.notes || null,
+          pg_liczba_urzadzen: data.pg_liczba_urzadzen || null,
+          pg_rodzaje_urzadzen: data.pg_rodzaje_urzadzen || null,
+          pg_material_urzadzen: data.pg_material_urzadzen || null,
+          pg_nawierzchnia: data.pg_nawierzchnia || null,
+          pg_nawierzchnia_pod_urzadzeniami: data.pg_nawierzchnia_pod_urzadzeniami || null,
+          pg_mocowanie_urzadzen: data.pg_mocowanie_urzadzen || null,
+          pg_ogrodzenie: data.pg_ogrodzenie || null,
+          pg_naslonecznienie: data.pg_naslonecznienie || null,
           status: 'draft',
         })
+
+        // Upload cover photo if selected
+        if (coverPhotoFile && user) {
+          try {
+            const compressed = await compressImage(coverPhotoFile, 2048)
+            const coverPath = `${user.id}/${inspection.id}/cover.webp`
+            const { error: uploadErr } = await supabase.storage
+              .from(STORAGE_BUCKETS.photos)
+              .upload(coverPath, compressed, { contentType: 'image/webp' })
+            if (!uploadErr) {
+              await updateInspection.mutateAsync({
+                id: inspection.id,
+                updates: { cover_photo_path: coverPath },
+              })
+            }
+          } catch {
+            // Cover photo upload failed — non-blocking
+          }
+        }
 
         addToast({ type: 'success', message: 'Inspekcja została utworzona' })
         navigate(buildPath(ROUTES.INSPECTION_DETAIL, { id: inspection.id }))
@@ -196,10 +260,17 @@ export default function NewInspectionPage() {
 
       {/* Form */}
       <FormProvider {...methods}>
-        <form onSubmit={onSubmit}>
+        <form onSubmit={(e) => e.preventDefault()}>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             {step === 0 && <Step1Type />}
-            {step === 1 && <Step2Building />}
+            {step === 1 && (
+              <Step2Building
+                inspectionType={getValues('type')}
+                coverPhotoFile={coverPhotoFile}
+                coverPhotoPreview={null}
+                onCoverPhotoChange={setCoverPhotoFile}
+              />
+            )}
             {step === 2 && <Step3Client />}
             {step === 3 && <Step4Extra inspectionType={getValues('type')} />}
             {step === 4 && <Step5Summary data={getValues()} />}
@@ -217,7 +288,7 @@ export default function NewInspectionPage() {
             </Button>
 
             {isLastStep ? (
-              <Button type="submit" loading={isPending}>
+              <Button type="button" onClick={onSubmit} loading={isPending}>
                 <Check size={16} />
                 Utwórz inspekcję
               </Button>

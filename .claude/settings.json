@@ -19,7 +19,21 @@
       "Read(//c/Users/mateu/Desktop/**)",
       "Bash(while read:*)",
       "Bash(do grep:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(mkdir -p \"c:/Users/mateu/Desktop/Cloude projekty/InspekcjAI/public/fonts\")",
+      "Bash(curl -sL -o Roboto-Regular.ttf \"https://github.com/google/fonts/raw/main/ofl/roboto/Roboto%5Bwdth%2Cwght%5D.ttf\")",
+      "Bash(ls -la *.ttf)",
+      "Bash(curl -sL -o Roboto-Regular.ttf \"https://github.com/google/fonts/raw/main/ofl/roboto/static/Roboto-Regular.ttf\")",
+      "Bash(curl -sL -o Roboto-Bold.ttf \"https://github.com/google/fonts/raw/main/ofl/roboto/static/Roboto-Bold.ttf\")",
+      "Bash(curl -sL -o Roboto-Italic.ttf \"https://github.com/google/fonts/raw/main/ofl/roboto/static/Roboto-Italic.ttf\")",
+      "Bash(xxd \"c:/Users/mateu/Desktop/Cloude projekty/InspekcjAI/public/fonts/Roboto-Regular.ttf\")",
+      "Bash(curl -L -o Roboto-Regular.ttf \"https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Regular.ttf\")",
+      "Bash(curl -L -o Roboto-Bold.ttf \"https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Bold.ttf\")",
+      "Bash(curl -L -o Roboto-Italic.ttf \"https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Italic.ttf\")",
+      "Bash(xxd \"c:/Users/mateu/Desktop/Cloude projekty/InspekcjAI/public/fonts/Roboto-Bold.ttf\")",
+      "Bash(xxd \"c:/Users/mateu/Desktop/Cloude projekty/InspekcjAI/public/fonts/Roboto-Italic.ttf\")",
+      "WebSearch",
+      "WebFetch(domain:supabase.com)"
     ]
   }
 }

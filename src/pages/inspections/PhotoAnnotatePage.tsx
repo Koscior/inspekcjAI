@@ -243,9 +243,19 @@ export default function PhotoAnnotatePage() {
 
     setSaving(true)
     try {
-      // Export canvas to blob
+      // Resize canvas to max 2048px if needed, then export as WebP
+      const MAX = 2048
+      let sourceCanvas = canvas
+      if (canvas.width > MAX || canvas.height > MAX) {
+        const ratio = Math.min(MAX / canvas.width, MAX / canvas.height)
+        const resized = document.createElement('canvas')
+        resized.width  = Math.round(canvas.width  * ratio)
+        resized.height = Math.round(canvas.height * ratio)
+        resized.getContext('2d')!.drawImage(canvas, 0, 0, resized.width, resized.height)
+        sourceCanvas = resized
+      }
       const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.9)
+        sourceCanvas.toBlob((b) => resolve(b!), 'image/webp', 0.85)
       })
 
       // Remove old annotated image if exists
@@ -255,10 +265,10 @@ export default function PhotoAnnotatePage() {
 
       // Upload with unique name to bust browser cache
       const ts = Date.now()
-      const annotatedPath = `${user.id}/${inspectionId}/annotated_${photo.id}_${ts}.jpg`
+      const annotatedPath = `${user.id}/${inspectionId}/annotated_${photo.id}_${ts}.webp`
       const { error: uploadErr } = await supabase.storage
         .from(STORAGE_BUCKETS.photos)
-        .upload(annotatedPath, blob, { contentType: 'image/jpeg' })
+        .upload(annotatedPath, blob, { contentType: 'image/webp' })
       if (uploadErr) throw uploadErr
 
       // Save annotations JSON in ai_analysis + annotated_path to DB

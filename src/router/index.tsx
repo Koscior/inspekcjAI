@@ -16,16 +16,28 @@ const InspectionDetailPage    = lazy(() => import('@/pages/inspections/Inspectio
 const ClientsPage             = lazy(() => import('@/pages/clients/ClientsPage'))
 const NewClientPage           = lazy(() => import('@/pages/clients/NewClientPage'))
 const ClientDetailPage        = lazy(() => import('@/pages/clients/ClientDetailPage'))
+const EditClientPage          = lazy(() => import('@/pages/clients/EditClientPage'))
 
 // Phase 3 pages
 const DefectsPage         = lazy(() => import('@/pages/inspections/DefectsPage'))
 const NewDefectPage       = lazy(() => import('@/pages/inspections/NewDefectPage'))
 const DefectDetailPage    = lazy(() => import('@/pages/inspections/DefectDetailPage'))
+const EditDefectPage      = lazy(() => import('@/pages/inspections/EditDefectPage'))
+const EditInspectionPage  = lazy(() => import('@/pages/inspections/EditInspectionPage'))
 const PhotosPage          = lazy(() => import('@/pages/inspections/PhotosPage'))
 const PhotoAnnotatePage   = lazy(() => import('@/pages/inspections/PhotoAnnotatePage'))
 const FloorPlansPage      = lazy(() => import('@/pages/inspections/FloorPlansPage'))
 const ChecklistPage       = lazy(() => import('@/pages/inspections/ChecklistPage'))
 const BuildingDocsPage    = lazy(() => import('@/pages/inspections/BuildingDocsPage'))
+const SignaturePage       = lazy(() => import('@/pages/inspections/SignaturePage'))
+const ReportPage          = lazy(() => import('@/pages/inspections/ReportPage'))
+
+// Reports page
+const ReportsPage = lazy(() => import('@/pages/reports/ReportsPage'))
+
+// Settings page
+const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'))
+const CompanyProfilePage = lazy(() => import('@/pages/settings/CompanyProfilePage'))
 
 // Placeholders for future pages
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -75,6 +87,10 @@ export const router = createBrowserRouter([
         element: wrap(<InspectionDetailPage />),
       },
       {
+        path: ROUTES.INSPECTION_EDIT,
+        element: wrap(<EditInspectionPage />),
+      },
+      {
         path: ROUTES.CLIENTS,
         element: wrap(<ClientsPage />),
       },
@@ -85,6 +101,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.CLIENT_DETAIL,
         element: wrap(<ClientDetailPage />),
+      },
+      {
+        path: ROUTES.CLIENT_EDIT,
+        element: wrap(<EditClientPage />),
       },
       // Phase 3 routes
       {
@@ -98,6 +118,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.INSPECTION_DEFECT_DETAIL,
         element: wrap(<DefectDetailPage />),
+      },
+      {
+        path: ROUTES.INSPECTION_DEFECT_EDIT,
+        element: wrap(<EditDefectPage />),
       },
       {
         path: ROUTES.INSPECTION_PHOTOS,
@@ -120,16 +144,24 @@ export const router = createBrowserRouter([
         element: wrap(<BuildingDocsPage />),
       },
       {
+        path: ROUTES.INSPECTION_SIGNATURE,
+        element: wrap(<SignaturePage />),
+      },
+      {
         path: ROUTES.INSPECTION_REPORT,
-        element: wrap(<PlaceholderPage title="Raport" />),
+        element: wrap(<ReportPage />),
       },
       {
         path: ROUTES.REPORTS,
-        element: wrap(<PlaceholderPage title="Raporty" />),
+        element: wrap(<ReportsPage />),
+      },
+      {
+        path: ROUTES.COMPANY_PROFILE,
+        element: wrap(<CompanyProfilePage />),
       },
       {
         path: ROUTES.SETTINGS,
-        element: wrap(<PlaceholderPage title="Ustawienia" />),
+        element: wrap(<SettingsPage />),
       },
       {
         path: ROUTES.SUBSCRIPTION,

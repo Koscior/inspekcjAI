@@ -1,11 +1,10 @@
-import { useNavigate, useParams } from 'react-router-dom'
-import { ClipboardList, ChevronDown, ChevronUp, CheckCircle2, Circle, MinusCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { ClipboardList, ChevronDown, ChevronUp, Camera } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useInspection } from '@/hooks/useInspections'
 import { useChecklist, useUpdateChecklistItem, type ChecklistSection } from '@/hooks/useChecklist'
 import { usePhotos } from '@/hooks/usePhotos'
 import { ROUTES, buildPath } from '@/router/routePaths'
-import { ELEMENT_STATE } from '@/config/constants'
 import { Spinner, EmptyState, Card, Badge } from '@/components/ui'
 import { InspectionNav } from '@/components/layout/InspectionNav'
 import { useUiStore } from '@/store/uiStore'
@@ -15,38 +14,50 @@ import { PhotoViewer } from '@/components/photos/PhotoViewer'
 import type { ChecklistItem, Photo } from '@/types/database.types'
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder'
 import type { Inspection } from '@/types/database.types'
+import ChecklistPlaygroundPage from './ChecklistPlaygroundPage'
 
 export default function ChecklistPage() {
   const { id: inspectionId } = useParams<{ id: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const addToast = useUiStore((s) => s.addToast)
 
+  const openItemId = searchParams.get('openItem')
+
   const { data: inspection } = useInspection(inspectionId)
+
+  // Dispatch to playground page for plac_zabaw
+  if (inspection?.type === 'plac_zabaw') {
+    return <ChecklistPlaygroundPage />
+  }
   const { data: sections, isLoading } = useChecklist(inspectionId, inspection?.type as Inspection['type'])
   const updateItem = useUpdateChecklistItem()
 
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+  const [openSection, setOpenSection] = useState<string | null>(null)
+
+  // Auto-expand section containing openItem (and collapse others)
+  useEffect(() => {
+    if (!openItemId || !sections) return
+    for (const section of sections) {
+      if (section.items.some((i) => i.id === openItemId)) {
+        setOpenSection(section.section)
+        break
+      }
+    }
+  }, [openItemId, sections])
+
+  // Clear openItem from URL after it's been consumed (so refresh doesn't re-trigger)
+  const clearOpenItem = useCallback(() => {
+    if (openItemId) {
+      setSearchParams((prev) => {
+        prev.delete('openItem')
+        return prev
+      }, { replace: true })
+    }
+  }, [openItemId, setSearchParams])
 
   function toggleSection(section: string) {
-    setExpandedSections((prev) => {
-      const next = new Set(prev)
-      if (next.has(section)) next.delete(section)
-      else next.add(section)
-      return next
-    })
-  }
-
-  async function handleStateChange(item: ChecklistItem, state: ChecklistItem['state']) {
-    if (!inspectionId) return
-    try {
-      await updateItem.mutateAsync({
-        id: item.id,
-        inspectionId,
-        updates: { state },
-      })
-    } catch {
-      addToast({ type: 'error', message: 'Błąd zapisu' })
-    }
+    setOpenSection((prev) => (prev === section ? null : section))
   }
 
   async function handleNotesChange(item: ChecklistItem, notes: string) {
@@ -62,9 +73,9 @@ export default function ChecklistPage() {
     }
   }
 
-  // Calculate progress
+  // Progress: count items with notes OR photos
   const allItems = sections?.flatMap((s) => s.items) || []
-  const filled = allItems.filter((i) => i.state !== null).length
+  const filled = allItems.filter((i) => i.notes).length
   const progress = allItems.length > 0 ? Math.round((filled / allItems.length) * 100) : 0
 
   return (
@@ -101,8 +112,8 @@ export default function ChecklistPage() {
       ) : (
         <div className="space-y-3">
           {sections.map((section) => {
-            const isOpen = expandedSections.has(section.section)
-            const sectionFilled = section.items.filter((i) => i.state !== null).length
+            const isOpen = openSection === section.section
+            const sectionFilled = section.items.filter((i) => i.notes).length
 
             return (
               <Card key={section.section} className="overflow-hidden !p-0">
@@ -128,8 +139,9 @@ export default function ChecklistPage() {
                         key={item.id}
                         item={item}
                         inspectionId={inspectionId!}
-                        onStateChange={handleStateChange}
                         onNotesChange={handleNotesChange}
+                        highlighted={item.id === openItemId}
+                        onHighlightConsumed={clearOpenItem}
                       />
                     ))}
                   </div>
@@ -148,21 +160,42 @@ export default function ChecklistPage() {
 interface ItemRowProps {
   item: ChecklistItem
   inspectionId: string
-  onStateChange: (item: ChecklistItem, state: ChecklistItem['state']) => void
   onNotesChange: (item: ChecklistItem, notes: string) => void
+  highlighted?: boolean
+  onHighlightConsumed?: () => void
 }
 
-function ChecklistItemRow({ item, inspectionId, onStateChange, onNotesChange }: ItemRowProps) {
+function ChecklistItemRow({ item, inspectionId, onNotesChange, highlighted, onHighlightConsumed }: ItemRowProps) {
   const navigate = useNavigate()
-  const [showNotes, setShowNotes] = useState(!!item.notes)
+  const rowRef = useRef<HTMLDivElement>(null)
+  const [showNotes, setShowNotes] = useState(!!item.notes || !!highlighted)
   const [notesValue, setNotesValue] = useState(item.notes || '')
-  const [showUploader, setShowUploader] = useState(false)
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const [debounceTimer, setDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [flash, setFlash] = useState(false)
+  const [highlightedPhotoId, setHighlightedPhotoId] = useState<string | null>(null)
+  const clearPhotoHighlight = useCallback(() => setHighlightedPhotoId(null), [])
 
   const { data: photos } = usePhotos(inspectionId, { checklistItemId: item.id })
 
-  const stateOptions = Object.entries(ELEMENT_STATE) as [ChecklistItem['state'] & string, string][]
+  // Auto-scroll and highlight when this item was just photographed
+  useEffect(() => {
+    if (!highlighted) return
+    setShowNotes(true)
+    setFlash(true)
+    // Scroll into view after a tick (section expansion needs to render first)
+    const scrollTimer = setTimeout(() => {
+      rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 150)
+    // Remove flash after animation
+    const flashTimer = setTimeout(() => setFlash(false), 2000)
+    // Clear the URL param
+    onHighlightConsumed?.()
+    return () => {
+      clearTimeout(scrollTimer)
+      clearTimeout(flashTimer)
+    }
+  }, [highlighted])
 
   function handleNotesInput(value: string) {
     setNotesValue(value)
@@ -171,39 +204,16 @@ function ChecklistItemRow({ item, inspectionId, onStateChange, onNotesChange }: 
     setDebounceTimer(timer)
   }
 
-  const stateIcon = item.state === 'dobry'
-    ? <CheckCircle2 size={16} className="text-green-500" />
-    : item.state === 'nie_dotyczy'
-    ? <MinusCircle size={16} className="text-gray-400" />
-    : item.state
-    ? <Circle size={16} className="text-orange-400" />
-    : <Circle size={16} className="text-gray-300" />
-
   return (
-    <div className="px-4 py-3 border-b border-gray-50 last:border-0">
+    <div
+      ref={rowRef}
+      className={`px-4 py-3 border-b border-gray-50 last:border-0 transition-colors duration-700 ${flash ? 'bg-primary-50' : ''}`}
+    >
       <div className="flex items-start gap-3">
-        <div className="mt-0.5">{stateIcon}</div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-800">{item.element_name}</p>
+          <p className="text-sm font-medium text-gray-800">{item.element_name}</p>
 
-          {/* State buttons */}
-          <div className="flex flex-wrap gap-1 mt-2">
-            {stateOptions.map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => onStateChange(item, key as ChecklistItem['state'])}
-                className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
-                  item.state === key
-                    ? 'bg-primary-50 border-primary-300 text-primary-700 font-medium'
-                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Notes toggle + input */}
+          {/* Notes */}
           <div className="mt-2">
             {!showNotes ? (
               <div className="flex items-center gap-1">
@@ -211,31 +221,35 @@ function ChecklistItemRow({ item, inspectionId, onStateChange, onNotesChange }: 
                   onClick={() => setShowNotes(true)}
                   className="text-xs text-primary-600 hover:text-primary-800"
                 >
-                  + Dodaj uwagę
+                  + Ocena stanu, uwagi
                 </button>
                 <VoiceRecorder
+                  inspectionId={inspectionId}
                   onTranscription={(text) => {
                     setNotesValue(text)
                     setShowNotes(true)
                     onNotesChange(item, text)
                   }}
+                  context="ocena stanu elementu budynku, uwagi z inspekcji budowlanej"
                 />
               </div>
             ) : (
               <div>
                 <div className="flex items-center gap-1 mb-1">
-                  <span className="text-[10px] text-gray-400">Uwagi</span>
+                  <span className="text-[10px] text-gray-400">Ocena stanu, uwagi</span>
                   <VoiceRecorder
+                    inspectionId={inspectionId}
                     onTranscription={(text) => {
                       setNotesValue(text)
                       onNotesChange(item, text)
                     }}
+                    context="ocena stanu elementu budynku, uwagi z inspekcji budowlanej"
                   />
                 </div>
                 <textarea
                   value={notesValue}
                   onChange={(e) => handleNotesInput(e.target.value)}
-                  placeholder="Uwagi do tego elementu..."
+                  placeholder="Ocena stanu, opis usterek, uwagi..."
                   rows={2}
                   className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 resize-none"
                 />
@@ -250,31 +264,23 @@ function ChecklistItemRow({ item, inspectionId, onStateChange, onNotesChange }: 
                 photos={photos}
                 columns={4}
                 onPhotoClick={(p) => setViewerIndex(photos.indexOf(p))}
+                highlightedPhotoId={highlightedPhotoId}
+                onHighlightDone={clearPhotoHighlight}
               />
             </div>
           )}
 
-          {/* Add photo toggle */}
+          {/* Photo buttons — always visible */}
           <div className="mt-2">
-            {!showUploader ? (
-              <button
-                onClick={() => setShowUploader(true)}
-                className="text-xs text-gray-400 hover:text-primary-600 flex items-center gap-1"
-              >
-                <span className="text-base leading-none">+</span>
-                Zdjęcie referencyjne
-                {photos && photos.length > 0 && (
-                  <span className="ml-1 text-gray-400">({photos.length})</span>
-                )}
-              </button>
-            ) : (
-              <div className="mt-1">
-                <PhotoUploader
-                  inspectionId={inspectionId}
-                  checklistItemId={item.id}
-                  onUploaded={() => setShowUploader(false)}
-                />
-              </div>
+            <PhotoUploader
+              inspectionId={inspectionId}
+              checklistItemId={item.id}
+              onUploaded={(id) => setHighlightedPhotoId(id)}
+            />
+            {photos && photos.length > 0 && (
+              <span className="text-[10px] text-gray-400 mt-1 block">
+                {photos.length} {photos.length === 1 ? 'zdjęcie' : photos.length < 5 ? 'zdjęcia' : 'zdjęć'}
+              </span>
             )}
           </div>
         </div>

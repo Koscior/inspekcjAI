@@ -30,6 +30,10 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      buffer: 'buffer/',
     },
+  },
+  optimizeDeps: {
+    include: ['buffer'],
   },
 }))

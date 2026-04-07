@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/config/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { STORAGE_BUCKETS } from '@/config/constants'
+import { compressImage } from '@/lib/imageUtils'
 import type { Photo, PhotoInsert, PhotoUpdate } from '@/types/database.types'
 
 const QUERY_KEY = 'photos'
@@ -59,39 +60,6 @@ export function usePhoto(photoId: string | undefined) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Compress image on client side before upload */
-async function compressImage(file: File, maxSize: number): Promise<Blob> {
-  return new Promise((resolve) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-
-      let { width, height } = img
-      if (width > maxSize || height > maxSize) {
-        const ratio = Math.min(maxSize / width, maxSize / height)
-        width = Math.round(width * ratio)
-        height = Math.round(height * ratio)
-      }
-
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, 0, 0, width, height)
-
-      canvas.toBlob(
-        (blob) => resolve(blob!),
-        'image/jpeg',
-        0.85,
-      )
-    }
-
-    img.src = url
-  })
-}
-
 /** Generate thumbnail */
 async function generateThumbnail(file: File): Promise<Blob> {
   return compressImage(file, 300)
@@ -132,22 +100,22 @@ export function useUploadPhoto() {
 
       // Compress original (max 2048px)
       const compressed = await compressImage(file, 2048)
-      const originalPath = `${basePath}/${fileId}.jpg`
+      const originalPath = `${basePath}/${fileId}.webp`
 
       // Generate thumbnail (300px)
       const thumbnail = await generateThumbnail(file)
-      const thumbnailPath = `${basePath}/thumbs/${fileId}.jpg`
+      const thumbnailPath = `${basePath}/thumbs/${fileId}.webp`
 
       // Upload original
       const { error: uploadError } = await supabase.storage
         .from(STORAGE_BUCKETS.photos)
-        .upload(originalPath, compressed, { contentType: 'image/jpeg' })
+        .upload(originalPath, compressed, { contentType: 'image/webp' })
       if (uploadError) throw uploadError
 
       // Upload thumbnail
       const { error: thumbError } = await supabase.storage
         .from(STORAGE_BUCKETS.photos)
-        .upload(thumbnailPath, thumbnail, { contentType: 'image/jpeg' })
+        .upload(thumbnailPath, thumbnail, { contentType: 'image/webp' })
       if (thumbError) throw thumbError
 
       // Get next photo_number
