@@ -288,7 +288,13 @@ async function fetchUrlAsBase64(url: string): Promise<string | null> {
     const cleanUrl = url.split('?')[0]
     const resp = await fetch(cleanUrl)
     if (!resp.ok) return null
-    const blob = await resp.blob()
+    let blob = await resp.blob()
+
+    // @react-pdf/renderer doesn't support WebP — convert to PNG via canvas
+    if (blob.type === 'image/webp') {
+      blob = await convertWebpToPng(blob)
+    }
+
     return new Promise((resolve) => {
       const reader = new FileReader()
       reader.onloadend = () => resolve(reader.result as string)
@@ -298,6 +304,36 @@ async function fetchUrlAsBase64(url: string): Promise<string | null> {
   } catch {
     return null
   }
+}
+
+async function convertWebpToPng(webpBlob: Blob): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(webpBlob)
+
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob(
+        (pngBlob) => {
+          if (pngBlob) resolve(pngBlob)
+          else reject(new Error('PNG conversion failed'))
+        },
+        'image/png',
+      )
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Failed to load WebP image'))
+    }
+
+    img.src = url
+  })
 }
 
 async function generateReportNumber(): Promise<string> {

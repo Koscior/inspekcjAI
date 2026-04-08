@@ -227,7 +227,7 @@ export function ProtocolReport({ data }: ProtocolReportProps) {
 
   return (
     <Document title={`${REPORT_TITLE} — ${data.inspection.title}`} author={data.profile.full_name}>
-      {/* ─── Page 1: Legal header + Inspector + Building ─────────────────── */}
+      {/* ─── Single wrapping page for all content ─────────────────────── */}
       <Page size="A4" style={s.page} wrap>
 
         {/* 1. Legal header */}
@@ -270,7 +270,7 @@ export function ProtocolReport({ data }: ProtocolReportProps) {
 
         {/* 2. Inspector */}
         <Text style={ps.sectionTitle}>OSOBA PRZEPROWADZAJĄCA KONTROLĘ</Text>
-        <View style={{ borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 2 }}>
+        <View style={{ borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 2 }} wrap={false}>
           <FieldRow label="Imię i nazwisko" value={profile.full_name} />
           <FieldRow label="Firma" value={profile.company_name as string} />
           <FieldRow label="Nr uprawnień" value={profile.license_number as string} />
@@ -281,63 +281,66 @@ export function ProtocolReport({ data }: ProtocolReportProps) {
 
         {/* 3. Building / Playground info */}
         {isPlayground ? (
-          <View style={{ borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 2 }}>
-            {/* Main header */}
-            <Text style={ps.subSectionHeader}>INFORMACJE OGÓLNE O PLACU ZABAW</Text>
+          <>
+            {/* General info block */}
+            <View style={{ borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 2 }} wrap={false}>
+              <Text style={ps.subSectionHeader}>INFORMACJE OGÓLNE O PLACU ZABAW</Text>
 
-            {/* Cover photo */}
-            {data.coverPhotoBase64 && (
-              <>
-                <Text style={ps.photoCaption}>Fotografia placu zabaw (widok ogólny)</Text>
-                <View style={ps.coverPhotoCell}>
-                  <Image src={data.coverPhotoBase64} style={{ width: '90%', maxHeight: 220, objectFit: 'cover' }} />
-                </View>
-              </>
-            )}
+              {/* Cover photo */}
+              {data.coverPhotoBase64 && (
+                <>
+                  <Text style={ps.photoCaption}>Fotografia placu zabaw (widok ogólny)</Text>
+                  <View style={ps.coverPhotoCell}>
+                    <Image src={data.coverPhotoBase64} style={{ width: '90%', maxHeight: 220, objectFit: 'cover' }} />
+                  </View>
+                </>
+              )}
 
-            {/* Owner/Manager — table-in-table (simulated rowSpan) */}
-            <View style={ps.ownerRow}>
-              <View style={ps.ownerLabel}>
-                <Text style={{ fontSize: 8, fontWeight: 'bold', color: COLORS.gray600, fontFamily: 'Roboto' }}>
-                  Właściciel lub{'\n'}zarządca
-                </Text>
+              {/* Owner/Manager — table-in-table (simulated rowSpan) */}
+              <View style={ps.ownerRow}>
+                <View style={ps.ownerLabel}>
+                  <Text style={{ fontSize: 8, fontWeight: 'bold', color: COLORS.gray600, fontFamily: 'Roboto' }}>
+                    Właściciel lub{'\n'}zarządca
+                  </Text>
+                </View>
+                <View style={ps.ownerSubRows}>
+                  <View style={ps.ownerSubRow}>
+                    <Text style={ps.ownerSubLabel}>Nazwa</Text>
+                    <Text style={ps.ownerSubValue}>{inspection.owner_name || '—'}</Text>
+                  </View>
+                  <View style={ps.ownerSubRow}>
+                    <Text style={ps.ownerSubLabel}>Adres</Text>
+                    <Text style={ps.ownerSubValue}>{inspection.owner_address || '—'}</Text>
+                  </View>
+                  <View style={ps.ownerSubRowLast}>
+                    <Text style={ps.ownerSubLabel}>Telefon kontaktowy</Text>
+                    <Text style={ps.ownerSubValue}>{inspection.owner_phone || '—'}</Text>
+                  </View>
+                </View>
               </View>
-              <View style={ps.ownerSubRows}>
-                <View style={ps.ownerSubRow}>
-                  <Text style={ps.ownerSubLabel}>Nazwa</Text>
-                  <Text style={ps.ownerSubValue}>{inspection.owner_name || '—'}</Text>
-                </View>
-                <View style={ps.ownerSubRow}>
-                  <Text style={ps.ownerSubLabel}>Adres</Text>
-                  <Text style={ps.ownerSubValue}>{inspection.owner_address || '—'}</Text>
-                </View>
-                <View style={ps.ownerSubRowLast}>
-                  <Text style={ps.ownerSubLabel}>Telefon kontaktowy</Text>
-                  <Text style={ps.ownerSubValue}>{inspection.owner_phone || '—'}</Text>
-                </View>
-              </View>
+
+              <FieldRow label="Adres placu zabaw" value={inspection.address} />
+              <FieldRow label="Nazwa placu zabaw" value={inspection.pg_nazwa} last />
             </View>
 
-            {/* Address & name */}
-            <FieldRow label="Adres placu zabaw" value={inspection.address} />
-            <FieldRow label="Nazwa placu zabaw" value={inspection.title} />
+            {/* Characteristics block — separate so it can flow independently */}
+            <View style={{ borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 2, marginTop: 8 }} wrap={false}>
+              <Text style={ps.subSectionHeader}>OGÓLNA CHARAKTERYSTYKA PLACU ZABAW</Text>
 
-            {/* Technical characteristics sub-header */}
-            <Text style={ps.subSectionHeader}>OGÓLNA CHARAKTERYSTYKA PLACU ZABAW</Text>
-
-            <FieldRow label="Liczba urządzeń" value={inspection.pg_liczba_urzadzen} />
-            <FieldRow label="Rodzaje urządzeń" value={inspection.pg_rodzaje_urzadzen} />
-            <FieldRow label="Rodzaj materiałów użytych do produkcji urządzeń" value={inspection.pg_material_urzadzen} />
-            <FieldRow label="Rodzaj nawierzchni" value={inspection.pg_nawierzchnia} />
-            <FieldRow label="Rodzaj nawierzchni pod urządzeniami" value={inspection.pg_nawierzchnia_pod_urzadzeniami} />
-            <FieldRow label="Sposób mocowania urządzeń w gruncie" value={inspection.pg_mocowanie_urzadzen} />
-            <FieldRow label="Rodzaj ogrodzenia" value={inspection.pg_ogrodzenie} />
-            <FieldRow label="Nasłonecznienie placu zabaw" value={inspection.pg_naslonecznienie} last />
-          </View>
+              <FieldRow label="Liczba urządzeń" value={inspection.pg_liczba_urzadzen} />
+              <FieldRow label="Rodzaje urządzeń" value={inspection.pg_rodzaje_urzadzen} />
+              <FieldRow label="Rodzaj materiałów użytych do produkcji urządzeń" value={inspection.pg_material_urzadzen} />
+              <FieldRow label="Rodzaj nawierzchni" value={inspection.pg_nawierzchnia} />
+              <FieldRow label="Rodzaj nawierzchni pod urządzeniami" value={inspection.pg_nawierzchnia_pod_urzadzeniami} />
+              <FieldRow label="Sposób mocowania urządzeń w gruncie" value={inspection.pg_mocowanie_urzadzen} />
+              <FieldRow label="Rodzaj ogrodzenia" value={inspection.pg_ogrodzenie} />
+              <FieldRow label="Nasłonecznienie placu zabaw" value={inspection.pg_naslonecznienie} last />
+            </View>
+          </>
         ) : (
           <>
             <Text style={ps.sectionTitle}>INFORMACJE O BUDYNKU</Text>
-            <View style={{ borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 2 }}>
+            <View style={{ borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 2 }} wrap={false}>
               <FieldRow label="Rodzaj budynku" value={inspection.building_type} />
               <FieldRow label="Adres" value={inspection.address} />
               <FieldRow label="Właściciel" value={inspection.owner_name} />
@@ -347,15 +350,9 @@ export function ProtocolReport({ data }: ProtocolReportProps) {
           </>
         )}
 
-        <PageFooter reportType={REPORT_TITLE} reportNumber={data.reportNumber} />
-      </Page>
-
-      {/* ─── Page 2: Previous inspection + Documentation ─────────────────── */}
-      <Page size="A4" style={s.page} wrap>
-
         {/* 4. Previous inspection review */}
         <Text style={ps.sectionTitle}>PRZEGLĄD POPRZEDNIEJ KONTROLI</Text>
-        <View style={{ borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 2 }}>
+        <View style={{ borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 2 }} wrap={false}>
           <FieldRow label="Zalecenia z poprzedniej kontroli" value={inspection.previous_protocol_notes} />
           <FieldRow label="Zakres wykonanych robót remontowych" value={inspection.completed_works} />
           <FieldRow
@@ -367,7 +364,7 @@ export function ProtocolReport({ data }: ProtocolReportProps) {
 
         {/* 5. Building documentation */}
         <Text style={ps.sectionTitle}>DOKUMENTACJA BUDYNKU</Text>
-        <View style={{ borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 2 }}>
+        <View style={{ borderWidth: 1, borderColor: COLORS.gray300, borderRadius: 2 }} wrap={false}>
           <DocStatusRow
             label="Dokumentacja budowy"
             status={inspection.building_docs_status as string}
@@ -383,100 +380,101 @@ export function ProtocolReport({ data }: ProtocolReportProps) {
           />
         </View>
 
-        <PageFooter reportType={REPORT_TITLE} reportNumber={data.reportNumber} />
-      </Page>
+        {/* 6. Checklist */}
+        {checklistSections.length > 0 && (
+          <View>
+            <Text style={s.h2}>
+              {isPlayground ? 'Przegląd elementów placu zabaw' : 'Przegląd elementów budynku'}
+            </Text>
+            <View style={s.divider} />
 
-      {/* ─── Checklist pages ─────────────────────────────────────────────── */}
-      {checklistSections.length > 0 && (
-        <Page size="A4" style={s.page} wrap>
-          <Text style={s.h2}>
-            {isPlayground ? 'Przegląd elementów placu zabaw' : 'Przegląd elementów budynku'}
-          </Text>
-          <View style={s.divider} />
+            {checklistSections.map((section) => (
+              <ChecklistTable key={section.section} section={section} />
+            ))}
 
-          {checklistSections.map((section) => (
-            <ChecklistTable key={section.section} section={section} />
-          ))}
-
-          {/* State legend */}
-          {(() => {
-            const hasStateItems = checklistSections.some((sec) =>
-              sec.items.some((i) => i.field_type === 'text_photos')
-            )
-            const hasYesNoItems = checklistSections.some((sec) =>
-              sec.items.some((i) => i.field_type === 'yesno_desc_photos' || i.field_type === 'yesno')
-            )
-            return (
-              <View style={{ marginTop: 12, padding: 8, backgroundColor: COLORS.gray50, borderRadius: 2, flexDirection: 'row', gap: 12 }}>
-                {hasStateItems && (
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 7, fontWeight: 'bold', color: COLORS.gray500, marginBottom: 4, fontFamily: 'Roboto' }}>
-                      KRYTERIA OCENY STANU TECHNICZNEGO:
-                    </Text>
-                    <Text style={{ fontSize: 7, color: COLORS.gray600, fontFamily: 'Roboto' }}>
-                      Dobry — element nie wymaga napraw ani konserwacji{'\n'}
-                      Średni — element wymaga drobnych napraw lub konserwacji{'\n'}
-                      Dostateczny — element wymaga poważnych napraw lub wymiany{'\n'}
-                      N/D — element nie dotyczy kontrolowanego obiektu
-                    </Text>
-                  </View>
-                )}
-                {hasYesNoItems && (
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 7, fontWeight: 'bold', color: COLORS.gray500, marginBottom: 4, fontFamily: 'Roboto' }}>
-                      OCENA ZGODNOŚCI:
-                    </Text>
-                    <Text style={{ fontSize: 7, color: COLORS.gray600, fontFamily: 'Roboto' }}>
-                      Tak — element spełnia wymagania{'\n'}
-                      Nie — element nie spełnia wymagań
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )
-          })()}
-
-          <PageFooter reportType={REPORT_TITLE} reportNumber={data.reportNumber} />
-        </Page>
-      )}
-
-      {/* ─── Critical defects + Conclusions + Signatures ─────────────────── */}
-      <Page size="A4" style={s.page} wrap>
-        {/* 7. Critical defects */}
-        <Text style={ps.sectionTitle}>STWIERDZONE USZKODZENIA ZAGRAŻAJĄCE ŻYCIU LUB ZDROWIU</Text>
-        {criticalDefects.length > 0 ? (
-          criticalDefects.map((d) => (
-            <View key={d.id} style={{ marginBottom: 6 }}>
-              <Text style={{ fontSize: 9, fontWeight: 'bold', color: COLORS.red500, fontFamily: 'Roboto' }}>
-                #{d.number} {d.title}
-              </Text>
-              {d.description && (
-                <Text style={{ fontSize: 8, color: COLORS.gray600, fontFamily: 'Roboto', marginTop: 2 }}>
-                  {d.description}
-                </Text>
-              )}
-            </View>
-          ))
-        ) : (
-          <Text style={{ fontSize: 8, color: COLORS.gray600, fontFamily: 'Roboto', fontStyle: 'italic' }}>
-            Nie stwierdzono uszkodzeń i braków, które mogłyby zagrażać życiu lub zdrowiu ludzi, bezpieczeństwu mienia bądź środowiska.
-          </Text>
+            {/* State legend */}
+            {(() => {
+              const hasStateItems = checklistSections.some((sec) =>
+                sec.items.some((i) => i.field_type === 'text_photos')
+              )
+              const hasYesNoItems = checklistSections.some((sec) =>
+                sec.items.some((i) => i.field_type === 'yesno_desc_photos' || i.field_type === 'yesno')
+              )
+              return (
+                <View style={{ marginTop: 12, padding: 8, backgroundColor: COLORS.gray50, borderRadius: 2, flexDirection: 'row', gap: 12 }} wrap={false}>
+                  {hasStateItems && (
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 7, fontWeight: 'bold', color: COLORS.gray500, marginBottom: 4, fontFamily: 'Roboto' }}>
+                        KRYTERIA OCENY STANU TECHNICZNEGO:
+                      </Text>
+                      <Text style={{ fontSize: 7, color: COLORS.gray600, fontFamily: 'Roboto' }}>
+                        Dobry — element nie wymaga napraw ani konserwacji{'\n'}
+                        Średni — element wymaga drobnych napraw lub konserwacji{'\n'}
+                        Dostateczny — element wymaga poważnych napraw lub wymiany{'\n'}
+                        N/D — element nie dotyczy kontrolowanego obiektu
+                      </Text>
+                    </View>
+                  )}
+                  {hasYesNoItems && (
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 7, fontWeight: 'bold', color: COLORS.gray500, marginBottom: 4, fontFamily: 'Roboto' }}>
+                        OCENA ZGODNOŚCI:
+                      </Text>
+                      <Text style={{ fontSize: 7, color: COLORS.gray600, fontFamily: 'Roboto' }}>
+                        Tak — element spełnia wymagania{'\n'}
+                        Nie — element nie spełnia wymagań
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )
+            })()}
+          </View>
         )}
 
-        {/* 8. Conclusions */}
-        <Text style={ps.sectionTitle}>WNIOSKI KOŃCOWE I ZALECENIA</Text>
-        {inspection.notes ? (
-          <Text style={{ fontSize: 8, color: COLORS.gray600, fontFamily: 'Roboto', lineHeight: 1.5 }}>
-            {inspection.notes as string}
-          </Text>
-        ) : (
-          <Text style={{ fontSize: 8, color: COLORS.gray500, fontFamily: 'Roboto', fontStyle: 'italic' }}>
-            Stan techniczny {isPlayground ? 'placu zabaw' : 'budynku'} ocenia się jako {criticalDefects.length > 0 ? 'wymagający natychmiastowej interwencji' : 'zadowalający'}.
-            {data.totalDefects > 0
-              ? ` Stwierdzono łącznie ${data.totalDefects} usterek/uwag wymagających naprawy lub monitorowania.`
-              : ' Nie stwierdzono usterek wymagających naprawy.'
-            }
-          </Text>
+        {/* 7. Critical defects (not for playground — covered by WNIOSKI POKONTROLNE) */}
+        {!isPlayground && (
+          <>
+            <Text style={ps.sectionTitle}>STWIERDZONE USZKODZENIA ZAGRAŻAJĄCE ŻYCIU LUB ZDROWIU</Text>
+            {criticalDefects.length > 0 ? (
+              criticalDefects.map((d) => (
+                <View key={d.id} style={{ marginBottom: 6 }}>
+                  <Text style={{ fontSize: 9, fontWeight: 'bold', color: COLORS.red500, fontFamily: 'Roboto' }}>
+                    #{d.number} {d.title}
+                  </Text>
+                  {d.description && (
+                    <Text style={{ fontSize: 8, color: COLORS.gray600, fontFamily: 'Roboto', marginTop: 2 }}>
+                      {d.description}
+                    </Text>
+                  )}
+                </View>
+              ))
+            ) : (
+              <Text style={{ fontSize: 8, color: COLORS.gray600, fontFamily: 'Roboto', fontStyle: 'italic' }}>
+                Nie stwierdzono uszkodzeń i braków, które mogłyby zagrażać życiu lub zdrowiu ludzi, bezpieczeństwu mienia bądź środowiska.
+              </Text>
+            )}
+          </>
+        )}
+
+        {/* 8. Conclusions (not for playground — covered by WNIOSKI POKONTROLNE) */}
+        {!isPlayground && (
+          <>
+            <Text style={ps.sectionTitle}>WNIOSKI KOŃCOWE I ZALECENIA</Text>
+            {inspection.notes ? (
+              <Text style={{ fontSize: 8, color: COLORS.gray600, fontFamily: 'Roboto', lineHeight: 1.5 }}>
+                {inspection.notes as string}
+              </Text>
+            ) : (
+              <Text style={{ fontSize: 8, color: COLORS.gray500, fontFamily: 'Roboto', fontStyle: 'italic' }}>
+                Stan techniczny budynku ocenia się jako {criticalDefects.length > 0 ? 'wymagający natychmiastowej interwencji' : 'zadowalający'}.
+                {data.totalDefects > 0
+                  ? ` Stwierdzono łącznie ${data.totalDefects} usterek/uwag wymagających naprawy lub monitorowania.`
+                  : ' Nie stwierdzono usterek wymagających naprawy.'
+                }
+              </Text>
+            )}
+          </>
         )}
 
         {/* 9. Wnioski pokontrolne (playground only) */}
@@ -492,18 +490,18 @@ export function ProtocolReport({ data }: ProtocolReportProps) {
               {/* Ocena końcowa sub-header */}
               <Text style={ps.subSectionHeader}>OCENA KOŃCOWA STANU TECHNICZNEGO</Text>
               <View style={{ padding: 8 }}>
-                <Text style={{ fontSize: 8, color: COLORS.gray800, fontFamily: 'Roboto', lineHeight: 1.8 }}>
+                <Text style={{ fontSize: 8, color: COLORS.gray700, fontFamily: 'Roboto', lineHeight: 1.8 }}>
                   Stan techniczny obiektu oceniam jako{' '}
                   <Text style={{ fontWeight: 'bold' }}>{inspection.ocena_stanu_tekst || '.........'}</Text>.
                 </Text>
-                <Text style={{ fontSize: 8, color: COLORS.gray800, fontFamily: 'Roboto', lineHeight: 1.8 }}>
+                <Text style={{ fontSize: 8, color: COLORS.gray700, fontFamily: 'Roboto', lineHeight: 1.8 }}>
                   Obiekt{' '}
                   <Text style={{ fontWeight: 'bold' }}>
                     {inspection.ocena_nadaje_sie === true ? 'nadaje się' : inspection.ocena_nadaje_sie === false ? 'nie nadaje się' : '..........'}
                   </Text>
                   {' '}do dalszego użytkowania.
                 </Text>
-                <Text style={{ fontSize: 8, color: COLORS.gray800, fontFamily: 'Roboto', lineHeight: 1.8 }}>
+                <Text style={{ fontSize: 8, color: COLORS.gray700, fontFamily: 'Roboto', lineHeight: 1.8 }}>
                   W trakcie kontroli{' '}
                   <Text style={{ fontWeight: 'bold' }}>
                     {inspection.ocena_stwierdzono_uszkodzenia === true ? 'stwierdzono' : inspection.ocena_stwierdzono_uszkodzenia === false ? 'nie stwierdzono' : '..........'}
@@ -554,7 +552,7 @@ function DocStatusRow({ label, status, last }: { label: string; status?: string 
   return (
     <View style={last ? ps.checklistRowLast : ps.fieldRow}>
       <Text style={ps.fieldLabel}>{label}</Text>
-      <Text style={[ps.fieldValue, info?.style || {}]}>
+      <Text style={info?.style ? { ...ps.fieldValue, ...(info.style as object) } : ps.fieldValue}>
         {info?.label || '—'}
       </Text>
     </View>
@@ -590,7 +588,7 @@ function ChecklistTable({ section }: { section: ChecklistSection }) {
             <View key={item.id} style={isLast ? ps.checklistRowLast : ps.checklistRow}>
               <Text style={ps.cellLp}>{idx + 1}</Text>
               <Text style={ps.cellElement}>{item.element_name}</Text>
-              <Text style={ps.cellState}>{cellValue}</Text>
+              <Text style={cellValue === 'Nie' ? { ...ps.cellState, fontWeight: 'bold' } : ps.cellState}>{cellValue}</Text>
               <Text style={ps.cellNotes}>{item.notes || '—'}</Text>
               <Text style={ps.cellPhoto}>
                 {item.photo_refs && item.photo_refs.length > 0

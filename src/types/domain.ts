@@ -76,6 +76,7 @@ export interface Inspection {
   ocena_stanu_tekst: string | null
   ocena_nadaje_sie: boolean | null
   ocena_stwierdzono_uszkodzenia: boolean | null
+  pg_nazwa: string | null
   pg_liczba_urzadzen: string | null
   pg_rodzaje_urzadzen: string | null
   pg_material_urzadzen: string | null

@@ -98,6 +98,11 @@ export function Step2Building({ inspectionType, coverPhotoFile, coverPhotoPrevie
         {/* Playground-specific fields */}
         {isPlayground && (
           <>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Nazwa placu zabaw</label>
+              <Input placeholder="np. Plac zabaw przy ul. Parkowej" {...register('pg_nazwa')} />
+            </div>
+
             <div className="pt-2 border-t border-gray-100">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Ogólna charakterystyka placu zabaw</h3>
             </div>

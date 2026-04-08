@@ -43,6 +43,7 @@ export const wizardSchema = z.object({
   kondygnacje_podziemne: z.string().optional(),
 
   // Step 2 — playground-specific fields
+  pg_nazwa: z.string().optional(),
   pg_liczba_urzadzen: z.string().optional(),
   pg_rodzaje_urzadzen: z.string().optional(),
   pg_material_urzadzen: z.string().optional(),
@@ -168,6 +169,7 @@ export default function NewInspectionPage() {
           kondygnacje_nadziemne: data.kondygnacje_nadziemne ? Number(data.kondygnacje_nadziemne) : null,
           kondygnacje_podziemne: data.kondygnacje_podziemne ? Number(data.kondygnacje_podziemne) : null,
           notes: data.notes || null,
+          pg_nazwa: data.pg_nazwa || null,
           pg_liczba_urzadzen: data.pg_liczba_urzadzen || null,
           pg_rodzaje_urzadzen: data.pg_rodzaje_urzadzen || null,
           pg_material_urzadzen: data.pg_material_urzadzen || null,

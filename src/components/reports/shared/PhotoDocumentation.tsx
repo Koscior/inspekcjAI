@@ -108,9 +108,11 @@ export function renderPhotoDocumentation({
                 <View key={rowIdx} style={ps.grid2}>
                   {row.map((photo) => (
                     <View key={photo.id} style={ps.gridCol}>
-                      <Image src={photoImages[photo.id]} style={ps.imageSmall} />
+                      {photoImages[photo.id] && (
+                        <Image src={photoImages[photo.id]} style={ps.imageSmall} />
+                      )}
                       <Text style={ps.caption}>
-                        Fot. {photo.photo_number}
+                        Fot. {photoNumberMap?.[photo.id] ?? photo.photo_number}
                         {photo.caption ? ` — ${photo.caption}` : ''}
                       </Text>
                     </View>
