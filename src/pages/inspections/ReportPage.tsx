@@ -1,9 +1,12 @@
 import { useState, useCallback, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { pdf } from '@react-pdf/renderer'
-import { FileText, Download, Eye, AlertTriangle, CheckCircle, Loader2, ChevronLeft } from 'lucide-react'
+import {
+  FileText, Download, Eye, AlertTriangle, CheckCircle, Loader2,
+  User, Users, Check, PenTool,
+} from 'lucide-react'
 import { Button, Card, Spinner } from '@/components/ui'
-import { REPORT_TYPES, INSPECTION_TYPES, CHECKLIST_INSPECTION_TYPES, FLOORPLAN_INSPECTION_TYPES } from '@/config/constants'
+import { REPORT_TYPES, INSPECTION_TYPES, CHECKLIST_INSPECTION_TYPES, FLOORPLAN_INSPECTION_TYPES, STORAGE_BUCKETS } from '@/config/constants'
 import { useAuthStore } from '@/store/authStore'
 import { collectReportData, type ReportData } from '@/services/reportDataService'
 import { TechnicalReport } from '@/components/reports/TechnicalReport'
@@ -11,8 +14,12 @@ import { TaskReport } from '@/components/reports/TaskReport'
 import { ProtocolReport } from '@/components/reports/ProtocolReport'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/config/supabase'
-import { buildPath, ROUTES } from '@/router/routePaths'
+import { ROUTES } from '@/router/routePaths'
 import { useSaveReport } from '@/hooks/useReports'
+import { useProfile, useUploadSignature } from '@/hooks/useProfile'
+import { useUiStore } from '@/store/uiStore'
+import { SignaturePad } from '@/components/signature/SignaturePad'
+import { InspectionNav } from '@/components/layout/InspectionNav'
 
 type ReportType = 'techniczny' | 'zadania' | 'protokol'
 
@@ -24,8 +31,10 @@ interface PreflightCheck {
 
 export default function ReportPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
+  const addToast = useUiStore((s) => s.addToast)
+  const { data: profile } = useProfile()
+  const uploadSignature = useUploadSignature()
 
   const [selectedType, setSelectedType] = useState<ReportType>('techniczny')
   const [progress, setProgress] = useState<{ step: string; current: number; total: number } | null>(null)
@@ -33,6 +42,10 @@ export default function ReportPage() {
   const [generatedBlob, setGeneratedBlob] = useState<Blob | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Signature state
+  const [clientSignatureUrl, setClientSignatureUrl] = useState<string | null>(null)
+  const [savingClient, setSavingClient] = useState(false)
 
   const saveReport = useSaveReport()
 
@@ -61,13 +74,73 @@ export default function ReportPage() {
     setSelectedType(isProtocolOnly ? 'protokol' : 'techniczny')
   }, [inspection?.type])
 
-  // Preflight checks
+  // ─── Signature handlers ─────────────────────────────────────────────────
+
+  const handleInspectorSignatureSave = async (blob: Blob) => {
+    try {
+      await uploadSignature.mutateAsync(blob)
+      addToast({ type: 'success', message: 'Podpis inspektora zapisany' })
+    } catch {
+      addToast({ type: 'error', message: 'Błąd zapisu podpisu inspektora' })
+    }
+  }
+
+  const handleClientSignatureSave = async (blob: Blob) => {
+    if (!user) return
+    setSavingClient(true)
+
+    try {
+      const storagePath = `${user.id}/${id}/client_signature_${Date.now()}.png`
+
+      if (clientSignatureUrl) {
+        const oldPath = extractStoragePath(clientSignatureUrl)
+        if (oldPath) {
+          await supabase.storage.from(STORAGE_BUCKETS.branding).remove([oldPath])
+        }
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKETS.branding)
+        .upload(storagePath, blob, { contentType: 'image/png', upsert: true })
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage
+        .from(STORAGE_BUCKETS.branding)
+        .getPublicUrl(storagePath)
+
+      const url = `${urlData.publicUrl}?t=${Date.now()}`
+      setClientSignatureUrl(url)
+      addToast({ type: 'success', message: 'Podpis klienta zapisany' })
+    } catch {
+      addToast({ type: 'error', message: 'Błąd zapisu podpisu klienta' })
+    } finally {
+      setSavingClient(false)
+    }
+  }
+
+  const handleClientSignatureClear = async () => {
+    if (clientSignatureUrl) {
+      const oldPath = extractStoragePath(clientSignatureUrl)
+      if (oldPath) {
+        await supabase.storage.from(STORAGE_BUCKETS.branding).remove([oldPath])
+      }
+    }
+    setClientSignatureUrl(null)
+  }
+
+  // ─── Preflight checks ──────────────────────────────────────────────────
+
   const preflightChecks: PreflightCheck[] = inspection
     ? [
         {
           label: 'Dane inspekcji',
           ok: !!inspection.title && !!inspection.address,
           warning: 'Brak tytułu lub adresu inspekcji',
+        },
+        {
+          label: 'Podpis inspektora',
+          ok: !!profile?.signature_url,
+          warning: 'Brak podpisu inspektora — uzupełnij powyżej',
         },
         ...(!CHECKLIST_INSPECTION_TYPES.includes(inspection.type as typeof CHECKLIST_INSPECTION_TYPES[number])
           ? [{
@@ -120,22 +193,18 @@ export default function ReportPage() {
     }
 
     try {
-      // 1. Collect data
       const data: ReportData = await collectReportData(id, user.id, selectedType, handleProgress)
 
       setProgress({ step: 'Generowanie PDF...', current: 0, total: 1 })
 
-      // 2. Render PDF to blob
       const ReportComponent = getReportComponent(selectedType)
       const blob = await pdf(<ReportComponent data={data} />).toBlob()
 
       setGeneratedBlob(blob)
 
-      // 3. Create preview URL
       const url = URL.createObjectURL(blob)
       setPreviewUrl(url)
 
-      // 4. Save report record to DB
       await saveReport.mutateAsync({
         inspectionId: id,
         reportType: selectedType,
@@ -179,7 +248,6 @@ export default function ReportPage() {
   const inspectionType = inspection?.type as string
   const inspectionLabel = INSPECTION_TYPES[inspectionType as keyof typeof INSPECTION_TYPES] || inspectionType
 
-  // Determine which report types are available for this inspection type
   const isProtocolOnly = CHECKLIST_INSPECTION_TYPES.includes(inspectionType as typeof CHECKLIST_INSPECTION_TYPES[number])
 
   const availableTypes: { key: ReportType; label: string; description: string }[] = isProtocolOnly
@@ -204,23 +272,99 @@ export default function ReportPage() {
       ]
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6">
-      {/* Header */}
+    <div className="max-w-3xl mx-auto space-y-4">
+      <InspectionNav />
+
+      {/* ─── Signatures Section ─────────────────────────────────────────── */}
       <div>
-        <button
-          onClick={() => navigate(buildPath(ROUTES.INSPECTION_DETAIL, { id: id! }))}
-          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Powrót do inspekcji
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900">Generowanie raportu</h1>
-        <p className="text-gray-500 mt-1">
-          {inspection?.title} — {inspectionLabel}
-        </p>
+        <div className="flex items-center gap-2 mb-3">
+          <PenTool size={18} className="text-primary-600" />
+          <h2 className="text-lg font-bold text-gray-900">Podpisy</h2>
+        </div>
+
+        {/* Inspector signature */}
+        <Card className="mb-3">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <User size={18} className="text-primary-600" />
+              <h3 className="text-base font-semibold text-gray-900">Podpis inspektora</h3>
+              {profile?.signature_url && (
+                <span className="ml-auto text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-medium">
+                  <Check size={12} className="inline mr-0.5" />
+                  Zapisany
+                </span>
+              )}
+            </div>
+
+            {profile?.signature_url ? (
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <img
+                  src={profile.signature_url}
+                  alt="Podpis inspektora"
+                  className="max-h-24 object-contain mx-auto"
+                />
+                <p className="text-xs text-gray-400 mt-2">{profile.full_name}</p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-xs text-amber-700">
+                    Brak podpisu inspektora. Narysuj podpis poniżej.
+                  </p>
+                </div>
+                <SignaturePad
+                  label="Narysuj podpis inspektora"
+                  onSave={handleInspectorSignatureSave}
+                  height={160}
+                />
+                {uploadSignature.isPending && (
+                  <div className="flex items-center gap-2 justify-center">
+                    <Spinner size="sm" />
+                    <span className="text-xs text-gray-500">Zapisywanie...</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </Card>
+
+        {/* Client signature */}
+        <Card className="mb-3">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Users size={18} className="text-primary-600" />
+              <h3 className="text-base font-semibold text-gray-900">Podpis klienta / zarządcy</h3>
+              {clientSignatureUrl && (
+                <span className="ml-auto text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-medium">
+                  <Check size={12} className="inline mr-0.5" />
+                  Zapisany
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs text-gray-500">
+              Podpis osoby potwierdzającej przeprowadzenie inspekcji (opcjonalny)
+            </p>
+
+            <SignaturePad
+              label="Podpis klienta / zarządcy"
+              existingUrl={clientSignatureUrl}
+              onSave={handleClientSignatureSave}
+              onClear={handleClientSignatureClear}
+              height={180}
+            />
+
+            {savingClient && (
+              <div className="flex items-center gap-2 justify-center">
+                <Spinner size="sm" />
+                <span className="text-xs text-gray-500">Zapisywanie podpisu klienta...</span>
+              </div>
+            )}
+          </div>
+        </Card>
       </div>
 
-      {/* Report type selection */}
+      {/* ─── Report type selection ──────────────────────────────────────── */}
       <Card className="p-4">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Typ raportu</h2>
         <div className="space-y-2">
@@ -257,7 +401,7 @@ export default function ReportPage() {
         </div>
       </Card>
 
-      {/* Preflight checks */}
+      {/* ─── Preflight checks ───────────────────────────────────────────── */}
       <Card className="p-4">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Sprawdzenie danych</h2>
         <div className="space-y-2">
@@ -281,7 +425,7 @@ export default function ReportPage() {
         </div>
       </Card>
 
-      {/* Generate button */}
+      {/* ─── Generate button ────────────────────────────────────────────── */}
       <div className="space-y-3">
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -328,7 +472,7 @@ export default function ReportPage() {
         )}
       </div>
 
-      {/* Preview / Download */}
+      {/* ─── Preview / Download ─────────────────────────────────────────── */}
       {generatedBlob && !generating && (
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-3">
@@ -360,5 +504,19 @@ function getReportComponent(type: ReportType) {
       return TaskReport
     case 'protokol':
       return ProtocolReport
+  }
+}
+
+function extractStoragePath(publicUrl: string): string | null {
+  try {
+    const marker = `/storage/v1/object/public/${STORAGE_BUCKETS.branding}/`
+    const idx = publicUrl.indexOf(marker)
+    if (idx === -1) return null
+    let path = publicUrl.slice(idx + marker.length)
+    const qIdx = path.indexOf('?')
+    if (qIdx > -1) path = path.slice(0, qIdx)
+    return path
+  } catch {
+    return null
   }
 }

@@ -76,7 +76,7 @@ export default function ChecklistPlaygroundPage() {
   const progress = allItems.length > 0 ? Math.round((filled / allItems.length) * 100) : 0
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto pb-20">
       <InspectionNav />
 
       <h1 className="text-lg font-bold text-gray-900 mb-2">Checklist — Plac zabaw</h1>

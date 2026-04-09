@@ -32,18 +32,32 @@ export function Step4Extra({ inspectionType }: Step4ExtraProps) {
 
         {/* Roczny / Pięcioletni / Półroczny */}
         {(inspectionType === 'roczny' || inspectionType === 'piecioletni' || inspectionType === 'polroczny') && (
-          <div className="grid grid-cols-2 gap-3">
+          <>
             <Input
-              label="Właściciel budynku"
-              placeholder="Nazwa lub imię"
+              label="Właściciel / zarządca"
+              placeholder="np. Wspólnota Mieszkaniowa, Urząd Gminy"
               {...register('owner_name')}
             />
             <Input
-              label="Administrator"
-              placeholder="Nazwa lub imię"
-              {...register('manager_name')}
+              label="Adres"
+              placeholder="ul. Przykładowa 1, 00-000 Miasto"
+              {...register('owner_address')}
             />
-          </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Telefon kontaktowy"
+                type="tel"
+                placeholder="np. 500 600 700"
+                {...register('owner_phone')}
+              />
+              <Input
+                label="E-mail"
+                type="email"
+                placeholder="kontakt@example.pl"
+                {...register('owner_email')}
+              />
+            </div>
+          </>
         )}
 
         {/* Odbiór mieszkania */}

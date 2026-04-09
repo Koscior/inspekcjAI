@@ -26,69 +26,66 @@ export default function DashboardPage() {
   const recentInspections = inspections?.slice(0, 5) ?? []
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="space-y-5">
       {/* Welcome */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Dzień dobry, {profile?.full_name?.split(' ')[0] ?? 'Inspektorze'}
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">Co dziś chcesz sprawdzić?</p>
-        </div>
-        <Button onClick={() => navigate(ROUTES.INSPECTION_NEW)} className="gap-2 shrink-0">
-          <Plus size={16} />
-          <span className="hidden sm:inline">Nowa inspekcja</span>
-        </Button>
+      <div>
+        <h1 className="text-xl font-bold text-gray-900">
+          Dzień dobry, {profile?.full_name?.split(' ')[0] ?? 'Inspektorze'}
+        </h1>
+        <p className="text-gray-500 text-sm mt-0.5">Co dziś chcesz sprawdzić?</p>
       </div>
 
+      {/* Big "New inspection" button */}
+      <Button
+        onClick={() => navigate(ROUTES.INSPECTION_NEW)}
+        className="w-full py-4 text-base font-bold gap-2"
+      >
+        <Plus size={20} />
+        Nowa inspekcja
+      </Button>
+
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         <Card>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
-              <ClipboardList size={20} className="text-blue-600" />
+          <div className="text-center">
+            <div className="w-11 h-11 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <ClipboardList size={22} className="text-blue-600" />
             </div>
-            <div>
-              {loadingInspections ? (
-                <Spinner size="sm" />
-              ) : (
-                <p className="text-2xl font-bold text-gray-900">{totalInspections}</p>
-              )}
-              <p className="text-xs text-gray-500">Inspekcje</p>
-              {activeInspections > 0 && (
-                <p className="text-xs text-blue-600 font-medium">{activeInspections} w trakcie</p>
-              )}
-            </div>
+            {loadingInspections ? (
+              <Spinner size="sm" />
+            ) : (
+              <p className="text-2xl font-bold text-gray-900">{totalInspections}</p>
+            )}
+            <p className="text-xs text-gray-500">Inspekcje</p>
+            {activeInspections > 0 && (
+              <p className="text-xs text-blue-600 font-medium mt-0.5">{activeInspections} w trakcie</p>
+            )}
           </div>
         </Card>
 
         <Card>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
-              <Users size={20} className="text-green-600" />
+          <div className="text-center">
+            <div className="w-11 h-11 bg-green-50 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <Users size={22} className="text-green-600" />
             </div>
-            <div>
-              {loadingClients ? (
-                <Spinner size="sm" />
-              ) : (
-                <p className="text-2xl font-bold text-gray-900">{totalClients}</p>
-              )}
-              <p className="text-xs text-gray-500">Klienci</p>
-            </div>
+            {loadingClients ? (
+              <Spinner size="sm" />
+            ) : (
+              <p className="text-2xl font-bold text-gray-900">{totalClients}</p>
+            )}
+            <p className="text-xs text-gray-500">Klienci</p>
           </div>
         </Card>
 
-        <Card className="col-span-2 md:col-span-1">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center shrink-0">
-              <FileText size={20} className="text-purple-600" />
+        <Card>
+          <div className="text-center">
+            <div className="w-11 h-11 bg-purple-50 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <FileText size={22} className="text-purple-600" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{reportsUsed}</p>
-              <p className="text-xs text-gray-500">
-                Raporty {reportLimit ? `/ ${reportLimit}` : '(bez limitu)'}
-              </p>
-            </div>
+            <p className="text-2xl font-bold text-gray-900">{reportsUsed}</p>
+            <p className="text-xs text-gray-500">
+              Raporty {reportLimit ? `/ ${reportLimit}` : ''}
+            </p>
           </div>
         </Card>
       </div>
@@ -103,9 +100,9 @@ export default function DashboardPage() {
             </div>
             <Badge color={reportsUsed >= (reportLimit ?? 3) ? 'red' : 'blue'}>Plan Darmowy</Badge>
           </div>
-          <div className="w-full bg-gray-100 rounded-full h-2">
+          <div className="w-full bg-gray-100 rounded-full h-2.5">
             <div
-              className="bg-primary-600 h-2 rounded-full transition-all"
+              className="bg-primary-600 h-2.5 rounded-full transition-all"
               style={{ width: `${usagePercent}%` }}
             />
           </div>
@@ -128,7 +125,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-100">
           <h2 className="font-semibold text-gray-900">Ostatnie inspekcje</h2>
           <Link to={ROUTES.INSPECTIONS} className="text-sm text-primary-600 hover:underline flex items-center gap-1">
-            Zobacz wszystkie
+            Wszystkie
             <ChevronRight size={14} />
           </Link>
         </div>
@@ -139,7 +136,7 @@ export default function DashboardPage() {
           </div>
         ) : recentInspections.length === 0 ? (
           <div className="text-center py-10 text-gray-400">
-            <ClipboardList size={36} className="mx-auto mb-2 opacity-30" />
+            <ClipboardList size={40} className="mx-auto mb-2 opacity-30" />
             <p className="text-sm">Brak inspekcji</p>
             <p className="text-xs mt-1">Utwórz pierwszą inspekcję</p>
           </div>
@@ -157,7 +154,7 @@ export default function DashboardPage() {
                   key={insp.id}
                   type="button"
                   onClick={() => navigate(buildPath(ROUTES.INSPECTION_DETAIL, { id: insp.id }))}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left group"
+                  className="w-full flex items-center gap-3 px-4 py-4 hover:bg-gray-50 transition-colors text-left group"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
@@ -192,7 +189,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                   </div>
-                  <ChevronRight size={15} className="text-gray-300 shrink-0 group-hover:text-primary-500 transition-colors" />
+                  <ChevronRight size={16} className="text-gray-300 shrink-0 group-hover:text-primary-500 transition-colors" />
                 </button>
               )
             })}
@@ -202,12 +199,20 @@ export default function DashboardPage() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3">
-        <Button variant="secondary" onClick={() => navigate(ROUTES.CLIENT_NEW)} className="justify-center gap-2">
-          <Users size={16} />
+        <Button
+          variant="secondary"
+          onClick={() => navigate(ROUTES.CLIENT_NEW)}
+          className="justify-center gap-2 py-4 text-sm font-semibold"
+        >
+          <Users size={18} />
           Nowy klient
         </Button>
-        <Button variant="secondary" onClick={() => navigate(ROUTES.CLIENTS)} className="justify-center gap-2">
-          <ClipboardList size={16} />
+        <Button
+          variant="secondary"
+          onClick={() => navigate(ROUTES.CLIENTS)}
+          className="justify-center gap-2 py-4 text-sm font-semibold"
+        >
+          <ClipboardList size={18} />
           Lista klientów
         </Button>
       </div>

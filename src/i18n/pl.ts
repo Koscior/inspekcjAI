@@ -74,6 +74,9 @@ export const pl = {
       photos:    'Zdjęcia',
       checklist: 'Checklista',
       report:    'Raport',
+      documents: 'Dokumenty',
+      plans:     'Plany',
+      more:      'Więcej',
     },
   },
 
@@ -162,6 +165,8 @@ export const pl = {
     clear: 'Wyczyść',
     save: 'Zapisz podpis',
     selectType: 'Wybierz typ raportu',
+    signatures: 'Podpisy',
+    signBeforeReport: 'Zbierz podpisy przed wygenerowaniem raportu',
     generated: 'Raport wygenerowany',
     sending: 'Wysyłam...',
     sent: 'Raport wysłany',

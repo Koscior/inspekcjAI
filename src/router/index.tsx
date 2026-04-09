@@ -29,8 +29,8 @@ const PhotoAnnotatePage   = lazy(() => import('@/pages/inspections/PhotoAnnotate
 const FloorPlansPage      = lazy(() => import('@/pages/inspections/FloorPlansPage'))
 const ChecklistPage       = lazy(() => import('@/pages/inspections/ChecklistPage'))
 const BuildingDocsPage    = lazy(() => import('@/pages/inspections/BuildingDocsPage'))
-const SignaturePage       = lazy(() => import('@/pages/inspections/SignaturePage'))
 const ReportPage          = lazy(() => import('@/pages/inspections/ReportPage'))
+const MorePage            = lazy(() => import('@/pages/inspections/MorePage'))
 
 // Reports page
 const ReportsPage = lazy(() => import('@/pages/reports/ReportsPage'))
@@ -144,12 +144,12 @@ export const router = createBrowserRouter([
         element: wrap(<BuildingDocsPage />),
       },
       {
-        path: ROUTES.INSPECTION_SIGNATURE,
-        element: wrap(<SignaturePage />),
-      },
-      {
         path: ROUTES.INSPECTION_REPORT,
         element: wrap(<ReportPage />),
+      },
+      {
+        path: ROUTES.INSPECTION_MORE,
+        element: wrap(<MorePage />),
       },
       {
         path: ROUTES.REPORTS,

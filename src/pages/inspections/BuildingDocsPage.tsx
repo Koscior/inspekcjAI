@@ -189,7 +189,7 @@ export default function BuildingDocsPage() {
   if (isLoading) return <Spinner size="lg" label="Ładowanie..." className="py-16" />
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto pb-20">
       <InspectionNav />
 
       <h1 className="text-lg font-bold text-gray-900 mb-4">Dokumentacja budynku</h1>

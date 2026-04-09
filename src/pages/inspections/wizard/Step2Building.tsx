@@ -1,6 +1,7 @@
 import { useFormContext } from 'react-hook-form'
 import { Input, Select } from '@/components/ui'
 import { BUILDING_CONSTRUCTION_TYPES } from '@/config/constants'
+import { useCallback } from 'react'
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder'
 import { CoverPhotoPicker } from './CoverPhotoPicker'
 import type { WizardData } from '../NewInspectionPage'
@@ -26,7 +27,16 @@ const CONSTRUCTION_OPTIONS = BUILDING_CONSTRUCTION_TYPES.map((v) => ({ value: v,
 const TYPES_WITH_TECHNICAL_DATA = ['roczny', 'polroczny', 'piecioletni']
 
 export function Step2Building({ inspectionType, coverPhotoFile, coverPhotoPreview, onCoverPhotoChange }: Step2BuildingProps) {
-  const { register, setValue, formState: { errors } } = useFormContext<WizardData>()
+  const { register, setValue, watch, formState: { errors } } = useFormContext<WizardData>()
+  const constructionTypeValue = watch('construction_type') || ''
+
+  const toggleConstructionType = useCallback((type: string) => {
+    const current = constructionTypeValue ? constructionTypeValue.split(', ').filter(Boolean) : []
+    const updated = current.includes(type)
+      ? current.filter((t) => t !== type)
+      : [...current, type]
+    setValue('construction_type', updated.join(', '), { shouldDirty: true })
+  }, [constructionTypeValue, setValue])
 
   const isPlayground = inspectionType === 'plac_zabaw'
   const showTechnical = inspectionType && TYPES_WITH_TECHNICAL_DATA.includes(inspectionType)
@@ -72,19 +82,35 @@ export function Step2Building({ inspectionType, coverPhotoFile, coverPhotoPrevie
 
         {!isPlayground && (
           <>
-            <div className="grid grid-cols-2 gap-3">
-              <Select
-                label="Rodzaj budynku"
-                placeholder="Wybierz..."
-                options={BUILDING_TYPES}
-                {...register('building_type')}
-              />
-              <Select
-                label="Rodzaj konstrukcji"
-                placeholder="Wybierz..."
-                options={CONSTRUCTION_OPTIONS}
-                {...register('construction_type')}
-              />
+            <Select
+              label="Rodzaj budynku"
+              placeholder="Wybierz..."
+              options={BUILDING_TYPES}
+              {...register('building_type')}
+            />
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Rodzaj konstrukcji</label>
+              <p className="text-xs text-gray-400 mb-2">Możesz wybrać kilka rodzajów</p>
+              <div className="flex flex-wrap gap-2">
+                {CONSTRUCTION_OPTIONS.map(({ value, label }) => {
+                  const selected = constructionTypeValue.split(', ').includes(value)
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => toggleConstructionType(value)}
+                      className={`px-3 py-1.5 text-sm rounded-lg border font-medium transition-colors ${
+                        selected
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-white text-gray-600 border-gray-300 hover:border-primary-400'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             <Input

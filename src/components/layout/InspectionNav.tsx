@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { ClipboardList, Bug, Map, FileText, Camera, BookOpen, PenTool, ChevronRight, X } from 'lucide-react'
+import { Camera, ChevronRight, X } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useState, useRef } from 'react'
 import { ROUTES, buildPath } from '@/router/routePaths'
@@ -10,12 +10,10 @@ import { useUiStore } from '@/store/uiStore'
 import type { Inspection } from '@/types/database.types'
 
 const CHECKLIST_TYPES: Inspection['type'][] = ['roczny', 'piecioletni', 'polroczny', 'plac_zabaw']
-const BUILDING_DOCS_TYPES: Inspection['type'][] = ['roczny', 'piecioletni', 'polroczny', 'plac_zabaw']
-const FLOORPLAN_TYPES: Inspection['type'][] = ['odbior_mieszkania', 'ogolna']
 
 /**
- * Sticky top navigation bar for inspection sub-pages.
- * Always visible on all inspection screens for quick switching on mobile.
+ * 4 large tabs at the top + fixed "Zdjęcia" button at the bottom of screen.
+ * Photo button hides on Raport and Więcej tabs.
  */
 export function InspectionNav() {
   const { id, inspectionId: paramInspectionId } = useParams<{ id: string; inspectionId: string }>()
@@ -27,12 +25,6 @@ export function InspectionNav() {
   const { data: inspection } = useInspection(effectiveId || undefined)
   const hasChecklist = inspection
     ? CHECKLIST_TYPES.includes(inspection.type as Inspection['type'])
-    : false
-  const hasBuildingDocs = inspection
-    ? BUILDING_DOCS_TYPES.includes(inspection.type as Inspection['type'])
-    : false
-  const hasFloorPlans = inspection
-    ? FLOORPLAN_TYPES.includes(inspection.type as Inspection['type'])
     : false
 
   // Load checklist sections for category picker
@@ -49,57 +41,33 @@ export function InspectionNav() {
   const selectedItemRef = useRef<string | null>(null)
   const upload = useUploadPhoto()
 
-  const insp = inspection as typeof inspection & {
-    defects?: { count: number }[]
-    photos?: { count: number }[]
-    floor_plans?: { count: number }[]
-  }
+  // ─── Tab configuration ────────────────────────────────────────────────
 
-  const defectCount = insp?.defects?.[0]?.count ?? 0
-  const planCount = insp?.floor_plans?.[0]?.count ?? 0
+  const reportPath = buildPath(ROUTES.INSPECTION_REPORT, { id: effectiveId })
+  const morePath = buildPath(ROUTES.INSPECTION_MORE, { id: effectiveId })
 
-  const tabs = [
-    ...(hasChecklist ? [{
-      path: buildPath(ROUTES.INSPECTION_CHECKLIST, { id: effectiveId }),
-      icon: ClipboardList,
-      label: 'Checklist',
-      count: 0,
-    }] : []),
-    ...(!hasChecklist ? [{
-      path: buildPath(ROUTES.INSPECTION_DEFECTS, { id: effectiveId }),
-      icon: Bug,
-      label: 'Usterki',
-      count: defectCount,
-    }] : []),
-    ...(hasFloorPlans ? [{
-      path: buildPath(ROUTES.INSPECTION_FLOORPLANS, { id: effectiveId }),
-      icon: Map,
-      label: 'Plany',
-      count: planCount,
-    }] : []),
-    ...(hasBuildingDocs ? [{
-      path: buildPath(ROUTES.INSPECTION_BUILDING_DOCS, { id: effectiveId }),
-      icon: BookOpen,
-      label: 'Dokumenty',
-      count: 0,
-    }] : []),
-    {
-      path: buildPath(ROUTES.INSPECTION_SIGNATURE, { id: effectiveId }),
-      icon: PenTool,
-      label: 'Podpis',
-      count: 0,
-    },
-    {
-      path: buildPath(ROUTES.INSPECTION_REPORT, { id: effectiveId }),
-      icon: FileText,
-      label: 'Raport',
-      count: 0,
-    },
-  ]
+  const tabs = hasChecklist
+    ? [
+        { path: buildPath(ROUTES.INSPECTION_CHECKLIST, { id: effectiveId }), label: 'Checklista' },
+        { path: buildPath(ROUTES.INSPECTION_BUILDING_DOCS, { id: effectiveId }), label: 'Dokumenty' },
+        { path: reportPath, label: 'Raport' },
+        { path: morePath, label: 'Więcej' },
+      ]
+    : [
+        { path: buildPath(ROUTES.INSPECTION_DEFECTS, { id: effectiveId }), label: 'Usterki' },
+        { path: buildPath(ROUTES.INSPECTION_FLOORPLANS, { id: effectiveId }), label: 'Plany' },
+        { path: reportPath, label: 'Raport' },
+        { path: morePath, label: 'Więcej' },
+      ]
+
+  // Hide photo button on Raport and Więcej tabs
+  const showPhotoButton = !location.pathname.startsWith(reportPath) && !location.pathname.startsWith(morePath)
 
   function isActive(tabPath: string) {
     return location.pathname.startsWith(tabPath)
   }
+
+  // ─── Photo upload logic ───────────────────────────────────────────────
 
   function handlePhotoBtnClick() {
     if (hasChecklist && checklistSections && checklistSections.length > 0) {
@@ -114,7 +82,6 @@ export function InspectionNav() {
     selectedItemRef.current = itemId
     setPendingMode(mode)
     setShowPicker(false)
-    // Trigger file input after modal closes
     setTimeout(() => {
       if (mode === 'gallery') fileRef.current?.click()
       else cameraRef.current?.click()
@@ -142,7 +109,6 @@ export function InspectionNav() {
     }
 
     addToast({ type: 'success', message: 'Zdjęcia dodane' })
-    // Navigate to checklist with openItem so the section expands and scrolls to the item
     const itemId = selectedItemRef.current
     selectedItemRef.current = null
     setPendingMode(null)
@@ -154,68 +120,63 @@ export function InspectionNav() {
   }
 
   return (
-    <div className="sticky top-0 z-20 -mx-4 md:-mx-6 px-4 md:px-6 bg-gray-50">
-      {/* Hidden file inputs for category photo upload */}
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => handleFiles(e.target.files)}
-      />
-      <input
-        ref={cameraRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => handleFiles(e.target.files)}
-      />
+    <>
+      <div className="sticky top-0 z-20 -mx-4 px-4 bg-gray-50">
+        {/* Hidden file inputs for category photo upload */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
 
-      {/* Tab bar */}
-      <div className="flex gap-1 py-2 overflow-x-auto scrollbar-hide">
-        {tabs.map((tab) => {
-          const active = isActive(tab.path)
-          return (
-            <button
-              key={tab.path}
-              onClick={() => navigate(tab.path)}
-              className={clsx(
-                'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0',
-                active
-                  ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:border-primary-300 active:scale-95',
-              )}
-            >
-              <tab.icon size={16} />
-              {tab.label}
-              {tab.count > 0 && (
-                <span className={clsx(
-                  'text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center',
-                  active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500',
-                )}>
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          )
-        })}
+        {/* 4 Large Tabs */}
+        <div className="grid grid-cols-4 gap-1 py-2">
+          {tabs.map((tab) => {
+            const active = isActive(tab.path)
+            return (
+              <button
+                key={tab.path}
+                onClick={() => navigate(tab.path)}
+                className={clsx(
+                  'py-3 rounded-lg text-sm font-bold text-center transition-all active:scale-[0.97]',
+                  active
+                    ? 'bg-primary-600 text-white shadow-sm'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-primary-300',
+                )}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Bottom photo strip */}
-      <button
-        onClick={handlePhotoBtnClick}
-        className={clsx(
-          'w-full flex items-center justify-center gap-2 py-2 mb-2 rounded-lg text-sm font-semibold transition-all active:scale-[0.98]',
-          location.pathname.includes('/photos')
-            ? 'bg-primary-700 text-white shadow-sm'
-            : 'bg-primary-600 text-white shadow-sm hover:bg-primary-700',
-        )}
-      >
-        <Camera size={18} />
-        Zdjęcia
-      </button>
+      {/* Fixed bottom photo button — hidden on Raport and Więcej */}
+      {showPhotoButton && (
+        <button
+          onClick={handlePhotoBtnClick}
+          className={clsx(
+            'fixed bottom-0 left-0 right-0 z-30 flex items-center justify-center gap-2 py-4 text-base font-semibold transition-all active:scale-[0.98]',
+            location.pathname.includes('/photos')
+              ? 'bg-primary-700 text-white shadow-lg'
+              : 'bg-primary-600 text-white shadow-lg hover:bg-primary-700',
+          )}
+        >
+          <Camera size={22} />
+          Zdjęcia
+        </button>
+      )}
 
       {/* Category picker modal */}
       {showPicker && (
@@ -247,7 +208,6 @@ export function InspectionNav() {
             {/* Content */}
             <div className="overflow-y-auto flex-1">
               {!selectedSection ? (
-                // Step 1: Pick section (category)
                 <div className="py-1">
                   {checklistSections?.map((section) => (
                     <button
@@ -261,7 +221,6 @@ export function InspectionNav() {
                   ))}
                 </div>
               ) : (
-                // Step 2: Pick item (subcategory) then choose gallery/camera
                 <div className="py-1">
                   {selectedSection.items.map((item) => (
                     <div
@@ -293,6 +252,6 @@ export function InspectionNav() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

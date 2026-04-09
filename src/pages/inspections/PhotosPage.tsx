@@ -58,7 +58,7 @@ export default function PhotosPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto pb-20">
       <InspectionNav />
 
       <div className="flex items-center justify-between mb-3">

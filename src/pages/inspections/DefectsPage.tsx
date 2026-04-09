@@ -43,7 +43,7 @@ export default function DefectsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto pb-20">
       <InspectionNav />
 
       {/* Header */}

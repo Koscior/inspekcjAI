@@ -26,8 +26,8 @@ export const ROUTES = {
   INSPECTION_PHOTOS:     '/inspections/:id/photos',
   INSPECTION_CHECKLIST:  '/inspections/:id/checklist',
   INSPECTION_BUILDING_DOCS: '/inspections/:id/building-docs',
-  INSPECTION_SIGNATURE:  '/inspections/:id/signature',
   INSPECTION_REPORT:     '/inspections/:id/report',
+  INSPECTION_MORE:       '/inspections/:id/more',
 
   // Photo annotation
   PHOTO_ANNOTATE: '/inspections/:inspectionId/photos/:photoId/annotate',
