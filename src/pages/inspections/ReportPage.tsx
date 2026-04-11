@@ -3,9 +3,9 @@ import { useParams } from 'react-router-dom'
 import { pdf } from '@react-pdf/renderer'
 import {
   FileText, Download, Eye, AlertTriangle, CheckCircle, Loader2,
-  User, Users, Check, PenTool,
+  User, Users, Check, PenTool, Send, Mail,
 } from 'lucide-react'
-import { Button, Card, Spinner } from '@/components/ui'
+import { Button, Card, Spinner, Modal } from '@/components/ui'
 import { REPORT_TYPES, INSPECTION_TYPES, CHECKLIST_INSPECTION_TYPES, FLOORPLAN_INSPECTION_TYPES, STORAGE_BUCKETS } from '@/config/constants'
 import { useAuthStore } from '@/store/authStore'
 import { collectReportData, type ReportData } from '@/services/reportDataService'
@@ -15,7 +15,7 @@ import { ProtocolReport } from '@/components/reports/ProtocolReport'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/config/supabase'
 import { ROUTES } from '@/router/routePaths'
-import { useSaveReport } from '@/hooks/useReports'
+import { useSaveReport, useSendReport, useInspectionReports } from '@/hooks/useReports'
 import { useProfile, useUploadSignature } from '@/hooks/useProfile'
 import { useUiStore } from '@/store/uiStore'
 import { SignaturePad } from '@/components/signature/SignaturePad'
@@ -42,12 +42,20 @@ export default function ReportPage() {
   const [generatedBlob, setGeneratedBlob] = useState<Blob | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [savedReportId, setSavedReportId] = useState<string | null>(null)
+
+  // Send email modal state
+  const [sendModalOpen, setSendModalOpen] = useState(false)
+  const [recipientEmail, setRecipientEmail] = useState('')
+  const [emailMessage, setEmailMessage] = useState('')
 
   // Signature state
   const [clientSignatureUrl, setClientSignatureUrl] = useState<string | null>(null)
   const [savingClient, setSavingClient] = useState(false)
 
   const saveReport = useSaveReport()
+  const sendReport = useSendReport()
+  const { data: inspectionReports } = useInspectionReports(id)
 
   // Fetch inspection for preflight checks
   const { data: inspection, isLoading } = useQuery({
@@ -73,6 +81,14 @@ export default function ReportPage() {
     )
     setSelectedType(isProtocolOnly ? 'protokol' : 'techniczny')
   }, [inspection?.type])
+
+  // Pre-fill recipient email from client
+  useEffect(() => {
+    if (inspection?.clients && 'email' in inspection.clients) {
+      const email = (inspection.clients as { email?: string | null }).email
+      if (email) setRecipientEmail(email)
+    }
+  }, [inspection?.clients])
 
   // ─── Signature handlers ─────────────────────────────────────────────────
 
@@ -205,13 +221,14 @@ export default function ReportPage() {
       const url = URL.createObjectURL(blob)
       setPreviewUrl(url)
 
-      await saveReport.mutateAsync({
+      const savedReport = await saveReport.mutateAsync({
         inspectionId: id,
         reportType: selectedType,
         reportNumber: data.reportNumber,
         blob,
       })
 
+      setSavedReportId(savedReport.id)
       setProgress(null)
     } catch (err) {
       console.error('Report generation failed:', err)
@@ -236,6 +253,30 @@ export default function ReportPage() {
       window.open(previewUrl, '_blank')
     }
   }
+
+  const handleSendEmail = async () => {
+    if (!savedReportId || !id) return
+    try {
+      await sendReport.mutateAsync({
+        reportId: savedReportId,
+        inspectionId: id,
+        recipientEmail,
+        message: emailMessage.trim() || undefined,
+      })
+      addToast({ type: 'success', message: `Raport wysłany na ${recipientEmail}` })
+      setSendModalOpen(false)
+      setEmailMessage('')
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Błąd wysyłki emaila',
+      })
+    }
+  }
+
+  // Check if latest report was already sent
+  const latestReport = inspectionReports?.[0]
+  const alreadySent = latestReport?.sent_at != null
 
   if (isLoading) {
     return (
@@ -472,26 +513,97 @@ export default function ReportPage() {
         )}
       </div>
 
-      {/* ─── Preview / Download ─────────────────────────────────────────── */}
+      {/* ─── Preview / Download / Send ─────────────────────────────────── */}
       {generatedBlob && !generating && (
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle className="w-5 h-5 text-green-500" />
             <h2 className="text-sm font-semibold text-gray-700">Raport gotowy!</h2>
+            {alreadySent && (
+              <span className="ml-auto flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-medium">
+                <Send className="w-3 h-3" />
+                Wysłany
+              </span>
+            )}
           </div>
 
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={handlePreview} className="flex-1">
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="secondary" onClick={handlePreview} className="flex-1 min-w-[100px]">
               <Eye className="w-4 h-4 mr-2" />
               Podgląd
             </Button>
-            <Button onClick={handleDownload} className="flex-1">
+            <Button variant="secondary" onClick={handleDownload} className="flex-1 min-w-[100px]">
               <Download className="w-4 h-4 mr-2" />
-              Pobierz PDF
+              Pobierz
+            </Button>
+            <Button
+              onClick={() => setSendModalOpen(true)}
+              className="flex-1 min-w-[100px]"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Wyślij do klienta
             </Button>
           </div>
         </Card>
       )}
+
+      {/* ─── Send email modal ───────────────────────────────────────────── */}
+      <Modal
+        isOpen={sendModalOpen}
+        onClose={() => setSendModalOpen(false)}
+        title="Wyślij raport emailem"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Adres e-mail odbiorcy <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="email"
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+              placeholder="klient@przykład.pl"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Wiadomość <span className="text-gray-400 font-normal">(opcjonalna)</span>
+            </label>
+            <textarea
+              value={emailMessage}
+              onChange={(e) => setEmailMessage(e.target.value)}
+              placeholder="Przesyłam raport z przeprowadzonej inspekcji..."
+              rows={3}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+            />
+          </div>
+
+          <p className="text-xs text-gray-500">
+            Odbiorca otrzyma link do pobrania PDF ważny przez 7 dni.
+          </p>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="secondary"
+              onClick={() => setSendModalOpen(false)}
+              className="flex-1"
+            >
+              Anuluj
+            </Button>
+            <Button
+              onClick={handleSendEmail}
+              disabled={!recipientEmail || sendReport.isPending}
+              loading={sendReport.isPending}
+              className="flex-1"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Wyślij
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

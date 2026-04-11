@@ -1,12 +1,12 @@
-import { ClipboardList, Users, FileText, Plus, ChevronRight, AlertTriangle, Calendar } from 'lucide-react'
+import { ClipboardList, Users, FileText, Plus, ChevronRight, AlertTriangle, Calendar, Clock } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { Card, Button, Badge, StatusBadge, Spinner } from '@/components/ui'
 import { ROUTES, buildPath } from '@/router/routePaths'
 import { FREE_PLAN_REPORT_LIMIT, INSPECTION_TYPES } from '@/config/constants'
-import { useInspections } from '@/hooks/useInspections'
+import { useInspections, useUpcomingInspections } from '@/hooks/useInspections'
 import { useClients } from '@/hooks/useClients'
-import { format } from 'date-fns'
+import { format, differenceInDays, isPast, isToday } from 'date-fns'
 import { pl } from 'date-fns/locale'
 import type { Inspection } from '@/types/database.types'
 
@@ -19,6 +19,7 @@ export default function DashboardPage() {
 
   const { data: inspections, isLoading: loadingInspections } = useInspections()
   const { data: clients, isLoading: loadingClients } = useClients()
+  const { data: upcoming } = useUpcomingInspections()
 
   const totalInspections = inspections?.length ?? 0
   const activeInspections = inspections?.filter((i) => i.status === 'in_progress').length ?? 0
@@ -196,6 +197,69 @@ export default function DashboardPage() {
           </div>
         )}
       </Card>
+
+      {/* Upcoming inspections */}
+      {upcoming && upcoming.length > 0 && (
+        <Card padding="none">
+          <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <Clock size={16} className="text-orange-500" />
+              <h2 className="font-semibold text-gray-900">Nadchodzące przeglądy</h2>
+            </div>
+            <Link to={ROUTES.INSPECTIONS} className="text-sm text-primary-600 hover:underline flex items-center gap-1">
+              Wszystkie
+              <ChevronRight size={14} />
+            </Link>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {upcoming.map((insp) => {
+              const nextDate = new Date(insp.next_inspection_date)
+              const daysLeft = differenceInDays(nextDate, new Date())
+              const overdue = isPast(nextDate) && !isToday(nextDate)
+              const today = isToday(nextDate)
+              const soon = !overdue && !today && daysLeft <= 30
+
+              return (
+                <button
+                  key={insp.id}
+                  type="button"
+                  onClick={() => navigate(buildPath(ROUTES.INSPECTION_DETAIL, { id: insp.id }))}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left group"
+                >
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${
+                    overdue ? 'bg-red-500' : today ? 'bg-orange-500' : soon ? 'bg-yellow-400' : 'bg-gray-300'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate group-hover:text-primary-700">
+                      {insp.title}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
+                      <span>{INSPECTION_TYPES[insp.type as Inspection['type']] ?? insp.type}</span>
+                      {insp.clients && <span>· {insp.clients.full_name}</span>}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className={`text-xs font-medium ${
+                      overdue ? 'text-red-600' : today ? 'text-orange-600' : soon ? 'text-yellow-600' : 'text-gray-400'
+                    }`}>
+                      {overdue
+                        ? `${Math.abs(daysLeft)}d po terminie`
+                        : today
+                        ? 'Dziś'
+                        : daysLeft === 1
+                        ? 'Jutro'
+                        : `za ${daysLeft}d`}
+                    </span>
+                    <p className="text-xs text-gray-400">
+                      {format(nextDate, 'd MMM yyyy', { locale: pl })}
+                    </p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3">

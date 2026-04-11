@@ -3,6 +3,7 @@ import { supabase } from '@/config/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { STORAGE_BUCKETS } from '@/config/constants'
 import { compressImage } from '@/lib/imageUtils'
+import { promoteInspectionStatus } from '@/lib/inspectionStatus'
 import type { Photo, PhotoInsert, PhotoUpdate } from '@/types/database.types'
 
 const QUERY_KEY = 'photos'
@@ -151,6 +152,9 @@ export function useUploadPhoto() {
     onSuccess: (_data, { inspectionId }) => {
       qc.invalidateQueries({ queryKey: [QUERY_KEY, inspectionId] })
       qc.invalidateQueries({ queryKey: ['defects', inspectionId] })
+      promoteInspectionStatus(inspectionId, 'in_progress').then(() => {
+        qc.invalidateQueries({ queryKey: ['inspections'] })
+      })
     },
   })
 }

@@ -1,17 +1,40 @@
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Download, ExternalLink, Loader2 } from 'lucide-react'
+import { FileText, Download, ExternalLink, Loader2, Send, Search, Filter } from 'lucide-react'
 import { Button, Card, Badge, Spinner, EmptyState } from '@/components/ui'
 import { REPORT_TYPES, INSPECTION_TYPES } from '@/config/constants'
 import { useReports, getReportDownloadUrl } from '@/hooks/useReports'
 import { buildPath, ROUTES } from '@/router/routePaths'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { useState } from 'react'
+
+const REPORT_TYPE_OPTIONS = [
+  { value: '', label: 'Wszystkie typy' },
+  ...Object.entries(REPORT_TYPES).map(([value, label]) => ({ value, label })),
+]
 
 export default function ReportsPage() {
   const navigate = useNavigate()
   const { data: reports, isLoading, error } = useReports()
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
+
+  const filtered = useMemo(() => {
+    if (!reports) return []
+    return reports.filter((r) => {
+      if (typeFilter && r.report_type !== typeFilter) return false
+      if (search) {
+        const q = search.toLowerCase()
+        const title = r.inspections?.title?.toLowerCase() ?? ''
+        const address = r.inspections?.address?.toLowerCase() ?? ''
+        const num = r.report_number?.toLowerCase() ?? ''
+        if (!title.includes(q) && !address.includes(q) && !num.includes(q)) return false
+      }
+      return true
+    })
+  }, [reports, search, typeFilter])
 
   const handleDownload = async (reportId: string, pdfPath: string | null) => {
     if (!pdfPath) return
@@ -25,6 +48,8 @@ export default function ReportsPage() {
       setDownloadingId(null)
     }
   }
+
+  const hasActiveFilters = !!typeFilter
 
   if (isLoading) {
     return (
@@ -43,25 +68,87 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Raporty</h1>
           <p className="text-gray-500 text-sm mt-1">
-            Wygenerowane raporty z inspekcji ({reports?.length || 0})
+            {filtered.length} z {reports?.length ?? 0} raportów
           </p>
         </div>
       </div>
 
-      {!reports || reports.length === 0 ? (
+      {/* Search + filter toggle */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Szukaj po nazwie, adresie lub numerze..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+        </div>
+        <button
+          onClick={() => setShowFilters((v) => !v)}
+          className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-colors ${
+            showFilters || hasActiveFilters
+              ? 'border-primary-500 text-primary-700 bg-primary-50'
+              : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+          }`}
+        >
+          <Filter size={15} />
+          Filtry
+          {hasActiveFilters && (
+            <Badge color="blue" size="sm">1</Badge>
+          )}
+        </button>
+      </div>
+
+      {/* Expanded filters */}
+      {showFilters && (
+        <div className="flex flex-wrap gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Typ raportu</label>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              {REPORT_TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          {hasActiveFilters && (
+            <div className="flex flex-col justify-end">
+              <button
+                onClick={() => setTypeFilter('')}
+                className="text-sm text-gray-500 hover:text-gray-700 px-2 py-1.5"
+              >
+                Wyczyść
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* List */}
+      {filtered.length === 0 ? (
         <EmptyState
           icon={<FileText className="w-12 h-12 text-gray-300" />}
-          title="Brak raportów"
-          description="Wygeneruj pierwszy raport z poziomu inspekcji"
+          title={search || typeFilter ? 'Brak wyników' : 'Brak raportów'}
+          description={
+            search || typeFilter
+              ? 'Zmień kryteria wyszukiwania lub usuń filtry.'
+              : 'Wygeneruj pierwszy raport z poziomu inspekcji.'
+          }
         />
       ) : (
         <div className="space-y-3">
-          {reports.map((report) => {
+          {filtered.map((report) => {
             const inspectionTitle = report.inspections?.title || '—'
             const inspectionType = report.inspections?.type as string
             const typeLabel =
@@ -79,6 +166,12 @@ export default function ReportsPage() {
                       <span className="text-xs font-mono text-gray-500">
                         {report.report_number}
                       </span>
+                      {report.sent_at && (
+                        <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-1.5 py-0.5 rounded-full font-medium">
+                          <Send className="w-3 h-3" />
+                          Wysłany {format(new Date(report.sent_at), 'd MMM', { locale: pl })}
+                        </span>
+                      )}
                     </div>
 
                     <p className="font-medium text-gray-900 mt-1.5 truncate">{inspectionTitle}</p>

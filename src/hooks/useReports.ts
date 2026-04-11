@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/config/supabase'
 import { STORAGE_BUCKETS } from '@/config/constants'
 import { useAuthStore } from '@/store/authStore'
+import { promoteInspectionStatus } from '@/lib/inspectionStatus'
 import type { Report } from '@/types/domain'
 
 // ─── Query: list all reports for user ────────────────────────────────────────
@@ -108,9 +109,58 @@ export function useSaveReport() {
       queryClient.invalidateQueries({
         queryKey: ['reports', 'inspection', variables.inspectionId],
       })
+      promoteInspectionStatus(variables.inspectionId, 'completed').then(() => {
+        queryClient.invalidateQueries({ queryKey: ['inspections'] })
+      })
     },
   })
 }
+
+// ─── Mutation: send report by email ──────────────────────────────────────────
+
+interface SendReportParams {
+  reportId: string
+  inspectionId: string
+  recipientEmail: string
+  message?: string
+}
+
+export function useSendReport() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ reportId, recipientEmail, message }: SendReportParams) => {
+      // Pobierz świeżą sesję bezpośrednio z klienta Supabase (auto-refresh)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Nie zalogowano')
+
+      const { data, error } = await supabase.functions.invoke('send-report-email', {
+        body: { reportId, recipientEmail, message },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (error) {
+        throw new Error(error.message || 'Wysyłka emaila nie powiodła się')
+      }
+
+      if (data?.error) {
+        throw new Error(data.error)
+      }
+
+      return data as { success: true }
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
+      queryClient.invalidateQueries({
+        queryKey: ['reports', 'inspection', variables.inspectionId],
+      })
+      queryClient.invalidateQueries({ queryKey: ['inspections'] })
+    },
+  })
+}
+
 
 // ─── Helper: get signed download URL ─────────────────────────────────────────
 

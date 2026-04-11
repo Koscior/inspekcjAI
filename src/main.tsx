@@ -8,13 +8,6 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
-// Unregister any stale service workers (prevents SW from intercepting API requests)
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((r) => r.unregister())
-  })
-}
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

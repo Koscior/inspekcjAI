@@ -33,7 +33,13 @@
       "Bash(xxd \"c:/Users/mateu/Desktop/Cloude projekty/InspekcjAI/public/fonts/Roboto-Bold.ttf\")",
       "Bash(xxd \"c:/Users/mateu/Desktop/Cloude projekty/InspekcjAI/public/fonts/Roboto-Italic.ttf\")",
       "WebSearch",
-      "WebFetch(domain:supabase.com)"
+      "WebFetch(domain:supabase.com)",
+      "Bash(npx sharp-cli:*)",
+      "Bash(ls -la \"c:/Users/mateu/Desktop/Cloude projekty/InspekcjAI/public/icon-\"*.png)",
+      "Bash(node -e \"const p = require\\('./node_modules/typescript-eslint/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(node -e \"const p = require\\('./node_modules/@typescript-eslint/eslint-plugin/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(node -e \"const p = require\\('./node_modules/@typescript-eslint/eslint-plugin/package.json'\\); console.log\\(p.main || 'no main', p.exports ? JSON.stringify\\(Object.keys\\(p.exports\\)\\) : 'no exports'\\)\")",
+      "Bash(npx eslint:*)"
     ]
   }
 }

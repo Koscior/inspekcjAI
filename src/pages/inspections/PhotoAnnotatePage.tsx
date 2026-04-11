@@ -6,7 +6,7 @@ import { supabase } from '@/config/supabase'
 import { STORAGE_BUCKETS } from '@/config/constants'
 import { useAuthStore } from '@/store/authStore'
 import { useUiStore } from '@/store/uiStore'
-import { Button, Spinner } from '@/components/ui'
+import { Button, Spinner, Modal, Textarea } from '@/components/ui'
 
 const COLORS = ['#FF0000', '#00FF00', '#0066FF', '#FFFF00', '#FF6600', '#FFFFFF', '#000000']
 const STROKE_WIDTHS = [2, 4, 6]
@@ -49,6 +49,9 @@ export default function PhotoAnnotatePage() {
   const [mode, setMode] = useState<'draw' | 'text'>('draw')
   const [saving, setSaving] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
+  const [textModalOpen, setTextModalOpen] = useState(false)
+  const [pendingTextCoords, setPendingTextCoords] = useState<{ x: number; y: number } | null>(null)
+  const [pendingText, setPendingText] = useState('')
 
   // Load existing annotations from ai_analysis
   useEffect(() => {
@@ -164,20 +167,28 @@ export default function PhotoAnnotatePage() {
     }
   }
 
+  function handleTextConfirm() {
+    if (pendingText.trim() && pendingTextCoords) {
+      setTextAnnotations((prev) => [...prev, {
+        x: pendingTextCoords.x,
+        y: pendingTextCoords.y,
+        text: pendingText.trim(),
+        color,
+        size: strokeWidth * 8,
+      }])
+      render()
+    }
+    setTextModalOpen(false)
+    setPendingTextCoords(null)
+    setPendingText('')
+  }
+
   function handlePointerDown(e: React.MouseEvent | React.TouchEvent) {
     if (mode === 'text') {
       const coords = getCanvasCoords(e)
-      const text = prompt('Wpisz tekst adnotacji:')
-      if (text) {
-        setTextAnnotations((prev) => [...prev, {
-          x: coords.x,
-          y: coords.y,
-          text,
-          color,
-          size: strokeWidth * 8,
-        }])
-        render()
-      }
+      setPendingTextCoords(coords)
+      setPendingText('')
+      setTextModalOpen(true)
       return
     }
 
@@ -406,6 +417,34 @@ export default function PhotoAnnotatePage() {
           />
         )}
       </div>
+
+      <Modal
+        isOpen={textModalOpen}
+        onClose={() => setTextModalOpen(false)}
+        title="Wpisz tekst adnotacji"
+      >
+        <Textarea
+          value={pendingText}
+          onChange={(e) => setPendingText(e.target.value)}
+          placeholder="Tekst adnotacji..."
+          rows={3}
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              handleTextConfirm()
+            }
+          }}
+        />
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="secondary" onClick={() => setTextModalOpen(false)}>
+            Anuluj
+          </Button>
+          <Button onClick={handleTextConfirm} disabled={!pendingText.trim()}>
+            Dodaj
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

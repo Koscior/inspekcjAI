@@ -1,8 +1,10 @@
 export const ROUTES = {
   // Auth
-  LOGIN:        '/login',
-  REGISTER:     '/register',
-  ONBOARDING:   '/onboarding',
+  LOGIN:            '/login',
+  REGISTER:         '/register',
+  FORGOT_PASSWORD:  '/forgot-password',
+  RESET_PASSWORD:   '/reset-password',
+  ONBOARDING:       '/onboarding',
 
   // App
   DASHBOARD:    '/',

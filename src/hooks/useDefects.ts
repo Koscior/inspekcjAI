@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/config/supabase'
 import { useAuthStore } from '@/store/authStore'
+import { promoteInspectionStatus } from '@/lib/inspectionStatus'
 import type { Defect, DefectInsert, DefectUpdate } from '@/types/database.types'
 
 const QUERY_KEY = 'defects'
@@ -125,6 +126,9 @@ export function useCreateDefect() {
     },
     onSuccess: (_data, input) => {
       qc.invalidateQueries({ queryKey: [QUERY_KEY, input.inspection_id] })
+      promoteInspectionStatus(input.inspection_id, 'in_progress').then(() => {
+        qc.invalidateQueries({ queryKey: ['inspections'] })
+      })
     },
   })
 }

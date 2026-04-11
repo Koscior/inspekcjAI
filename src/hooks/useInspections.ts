@@ -47,6 +47,37 @@ export function useInspections(filters?: InspectionFilters) {
   })
 }
 
+// ─── Upcoming / overdue inspections (next_inspection_date set) ───────────────
+
+export function useUpcomingInspections() {
+  const user = useAuthStore((s) => s.user)
+
+  return useQuery({
+    queryKey: [QUERY_KEY, 'upcoming'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('inspections')
+        .select('id, title, address, type, next_inspection_date, clients ( full_name )')
+        .eq('user_id', user!.id)
+        .not('next_inspection_date', 'is', null)
+        .order('next_inspection_date', { ascending: true })
+        .limit(10)
+
+      if (error) throw error
+      return data as Array<{
+        id: string
+        title: string
+        address: string
+        type: string
+        next_inspection_date: string
+        clients: { full_name: string } | null
+      }>
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
 // ─── Single ───────────────────────────────────────────────────────────────────
 
 export function useInspection(id: string | undefined) {
@@ -87,7 +118,7 @@ export function useCreateInspection() {
 
       const { data, error } = await supabase
         .from('inspections')
-        .insert({ ...input, user_id: user.id })
+        .insert({ ...input, user_id: user.id, status: input.status ?? 'draft' })
         .select()
         .single()
 
