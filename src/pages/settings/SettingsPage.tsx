@@ -1,19 +1,22 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import * as Sentry from '@sentry/react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   ChevronRight, User, Shield, CreditCard, LogOut, Trash2,
-  Building2, Loader2, CheckCircle2,
+  Building2, Loader2, CheckCircle2, AlertTriangle,
 } from 'lucide-react'
-import { Button, Card, Badge, Input, ConfirmModal, Spinner } from '@/components/ui'
+import { Button, Card, Badge, Input, ConfirmModal, Spinner, Modal } from '@/components/ui'
 import { useProfile } from '@/hooks/useProfile'
 import { useAuth } from '@/hooks/useAuth'
 import { useUiStore } from '@/store/uiStore'
 import { supabase } from '@/config/supabase'
 import { ROUTES } from '@/router/routePaths'
 import { FREE_PLAN_REPORT_LIMIT } from '@/config/constants'
+
+const DELETE_CONFIRMATION_PHRASE = 'USUŃ KONTO'
 
 // ─── Password schema ─────────────────────────────────────────────────────────
 
@@ -62,6 +65,9 @@ export default function SettingsPage() {
   const { data: profile, isLoading } = useProfile()
   const [logoutModalOpen, setLogoutModalOpen] = useState(false)
   const [passwordSaved, setPasswordSaved] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   const {
     register,
@@ -80,6 +86,27 @@ export default function SettingsPage() {
     resetForm()
     addToast({ type: 'success', message: 'Hasło zostało zmienione' })
     setTimeout(() => setPasswordSaved(false), 3000)
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteConfirmInput !== DELETE_CONFIRMATION_PHRASE) return
+    setDeleting(true)
+    try {
+      const { error } = await supabase.rpc('delete_user_account')
+      if (error) throw error
+      await supabase.auth.signOut()
+      navigate(ROUTES.LOGIN)
+    } catch (err) {
+      Sentry.captureException(err, { tags: { action: 'delete_account' } })
+      addToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Błąd podczas usuwania konta',
+      })
+    } finally {
+      setDeleting(false)
+      setDeleteModalOpen(false)
+      setDeleteConfirmInput('')
+    }
   }
 
   if (isLoading) {
@@ -252,18 +279,12 @@ export default function SettingsPage() {
             </p>
             <Button
               variant="ghost"
-              className="w-full gap-2 text-red-400 hover:text-red-600 hover:bg-red-50 cursor-not-allowed opacity-60"
-              disabled
+              className="w-full gap-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+              onClick={() => setDeleteModalOpen(true)}
             >
               <Trash2 size={16} />
               Usuń konto
             </Button>
-            <p className="text-xs text-gray-400 text-center mt-1.5">
-              Aby usunąć konto napisz na{' '}
-              <a href="mailto:kontakt@inspekcjai.pl" className="underline hover:text-gray-600">
-                kontakt@inspekcjai.pl
-              </a>
-            </p>
           </div>
         </Card>
       </section>
@@ -278,6 +299,55 @@ export default function SettingsPage() {
         confirmLabel="Wyloguj"
         danger
       />
+
+      {/* ── Delete account modal ───────────────────────────────────────────── */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => { setDeleteModalOpen(false); setDeleteConfirmInput('') }}
+        title="Usuń konto"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
+            <div className="text-sm text-red-800">
+              <p className="font-semibold mb-1">Ta operacja jest nieodwracalna.</p>
+              <p>Zostaną trwale usunięte: Twoje konto, wszystkie inspekcje, usterki, zdjęcia, plany, raporty i dane klientów.</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-700 mb-1.5">
+              Wpisz <span className="font-mono font-semibold text-red-600">{DELETE_CONFIRMATION_PHRASE}</span> aby potwierdzić:
+            </label>
+            <Input
+              value={deleteConfirmInput}
+              onChange={(e) => setDeleteConfirmInput(e.target.value)}
+              placeholder={DELETE_CONFIRMATION_PHRASE}
+              autoComplete="off"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => { setDeleteModalOpen(false); setDeleteConfirmInput('') }}
+              disabled={deleting}
+            >
+              Anuluj
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 focus:ring-red-500"
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmInput !== DELETE_CONFIRMATION_PHRASE || deleting}
+              loading={deleting}
+            >
+              <Trash2 size={16} className="mr-1.5" />
+              Usuń konto na zawsze
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

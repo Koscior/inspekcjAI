@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import * as Sentry from '@sentry/react'
 import { FileText, Download, ExternalLink, Loader2, Send, Search, Filter } from 'lucide-react'
 import { Button, Card, Badge, Spinner, EmptyState } from '@/components/ui'
 import { REPORT_TYPES, INSPECTION_TYPES } from '@/config/constants'
@@ -43,7 +44,7 @@ export default function ReportsPage() {
       const url = await getReportDownloadUrl(pdfPath)
       window.open(url, '_blank')
     } catch (err) {
-      console.error('Download failed:', err)
+      Sentry.captureException(err, { tags: { action: 'report_download' } })
     } finally {
       setDownloadingId(null)
     }

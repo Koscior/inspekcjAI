@@ -90,8 +90,6 @@ async function handleTranscribe(formData: FormData): Promise<Response> {
   whisperForm.append('language', 'pl')
   whisperForm.append('response_format', 'text')
 
-  console.log(`Transcribing audio: ${(audioBlob.size / 1024).toFixed(1)} KB`)
-
   const whisperRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
     method: 'POST',
     headers: {
@@ -111,8 +109,6 @@ async function handleTranscribe(formData: FormData): Promise<Response> {
 
   // Whisper with response_format=text returns plain text
   const transcription = (await whisperRes.text()).trim()
-
-  console.log(`Transcription result: ${transcription.length} characters`)
 
   return jsonResponse({ transcription })
 }
@@ -176,8 +172,6 @@ WYNIK: "Podczas pracy dźwigu w cyklu podnoszenia odnotowano niepokojące sygna�
   const fieldLabel = context || 'protokół z inspekcji budowlanej'
   const userMessage = `Sekcja dokumentu: ${fieldLabel}\n\n<tekst_źródłowy>\n${text.trim()}\n</tekst_źródłowy>`
 
-  console.log(`Professionalizing text: ${text.length} characters`)
-
   const chatRes = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -210,8 +204,6 @@ WYNIK: "Podczas pracy dźwigu w cyklu podnoszenia odnotowano niepokojące sygna�
   if (!professionalText) {
     return jsonResponse({ error: 'AI returned empty response' }, 500)
   }
-
-  console.log(`Professional text: ${professionalText.length} characters`)
 
   return jsonResponse({
     professional_text: professionalText,

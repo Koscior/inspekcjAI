@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import * as Sentry from '@sentry/react'
 import { pdf } from '@react-pdf/renderer'
 import {
   FileText, Download, Eye, AlertTriangle, CheckCircle, Loader2,
@@ -231,7 +232,7 @@ export default function ReportPage() {
       setSavedReportId(savedReport.id)
       setProgress(null)
     } catch (err) {
-      console.error('Report generation failed:', err)
+      Sentry.captureException(err, { tags: { action: 'report_generation' } })
       setError(err instanceof Error ? err.message : 'Wystąpił błąd podczas generowania raportu')
       setProgress(null)
     } finally {

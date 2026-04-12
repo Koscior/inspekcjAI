@@ -40,14 +40,7 @@ const ReportsPage = lazy(() => import('@/pages/reports/ReportsPage'))
 // Settings page
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'))
 const CompanyProfilePage = lazy(() => import('@/pages/settings/CompanyProfilePage'))
-
-// Placeholders for future pages
-const PlaceholderPage = ({ title }: { title: string }) => (
-  <div className="p-6">
-    <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-    <p className="text-gray-500 mt-2">Ta sekcja jest w trakcie budowy...</p>
-  </div>
-)
+const SubscriptionPage = lazy(() => import('@/pages/subscription/SubscriptionPage'))
 
 const wrap = (element: React.ReactNode) => (
   <Suspense fallback={<PageSpinner />}>{element}</Suspense>
@@ -175,7 +168,7 @@ export const router = createBrowserRouter([
       },
       {
         path: ROUTES.SUBSCRIPTION,
-        element: wrap(<PlaceholderPage title="Subskrypcja" />),
+        element: wrap(<SubscriptionPage />),
       },
     ],
   },

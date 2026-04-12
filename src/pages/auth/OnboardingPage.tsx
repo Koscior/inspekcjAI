@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import * as Sentry from '@sentry/react'
 import { Building2, User } from 'lucide-react'
 import { clsx } from 'clsx'
 import { supabase } from '@/config/supabase'
@@ -57,7 +58,7 @@ export default function OnboardingPage() {
       setProfile(profile as never)
       navigate(ROUTES.DASHBOARD)
     } catch (err) {
-      console.error(err)
+      Sentry.captureException(err)
       addToast({ type: 'error', message: 'Błąd podczas konfiguracji konta' })
     } finally {
       setLoading(false)
