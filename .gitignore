@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Test artifacts
+test-results/
+playwright-report/
+coverage/
+
+# Supabase local config
+supabase/config.toml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

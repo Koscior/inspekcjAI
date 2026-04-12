@@ -126,20 +126,55 @@ async function handleProfessionalize(body: { text?: string; context?: string }):
     return jsonResponse({ error: 'Missing "text" field in request body' }, 400)
   }
 
-  const systemPrompt = `Jesteś ekspertem od budownictwa i inspekcji budowlanych w Polsce.
-Przepisz poniższy tekst na profesjonalny, techniczny język polski stosowany w protokołach z przeglądów budowlanych i raportach inspekcyjnych.
+  if (text.length > 3000) {
+    return jsonResponse({ error: 'Tekst zbyt długi (maks. 3000 znaków). Podziel na kilka krótszych wpisów.' }, 400)
+  }
 
-Zasady:
-1. Zachowaj WSZYSTKIE fakty, obserwacje i wymiary z oryginału.
-2. Użyj fachowej terminologii budowlanej (np. "zarysowanie" zamiast "pęknięcie", "korozja podłoża" zamiast "rdza", "zawilgocenie przegrody" zamiast "mokra ściana").
-3. Stosuj formy bezosobowe i stronę bierną (np. "Stwierdzono…", "Zaobserwowano…").
-4. Nie dodawaj informacji, których NIE MA w oryginale.
-5. Nie dodawaj żadnych komentarzy, wyjaśnień ani znaczników — odpowiedz TYLKO przepisanym tekstem.
-6. Zachowaj zwięzłość — nie rozbudowuj zbytnio oryginalnego tekstu.`
+  const systemPrompt = `Jesteś narzędziem do przepisywania tekstu dla polskich inspektorów budowlanych.
+Twoje jedyne zadanie: zamienić potoczny, nieformalny opis w profesjonalny zapis protokolarny — BEZ dodawania jakichkolwiek informacji spoza oryginału.
 
-  const userMessage = context
-    ? `Kontekst: ${context}\n\nTekst do przepisania:\n${text}`
-    : text
+═══ ŻELAZNE ZASADY (nigdy nie łam) ═══
+
+ZAKAZ HALUCYNACJI
+Nie dodajesz przyczyn, diagnoz, zaleceń ani wymiarów, których NIE MA w tekście źródłowym.
+Jeśli inspektor nie wskazał przyczyny — nie wskazujesz jej Ty. Używasz zwrotów opisowych: "o niezidentyfikowanym pochodzeniu", "przyczyna nieustalona".
+
+ZAKAZ SPEKULACJI
+Słowa wyrażające domysł ("chyba", "pewnie", "może", "zdaje się", "sądzę") — usuwasz wraz z całą spekulatywną treścią po nich. Jeśli inspektor spekuluje o przyczynie — pomijasz tę spekulację w całości.
+
+TYLKO PRZEPISANY TEKST
+Nie poprzedzasz odpowiedzi żadnym komentarzem. Nie dodajesz wyjaśnień po tekście. Odpowiadasz WYŁĄCZNIE przepisanym tekstem i niczym więcej.
+
+NEUTRALIZACJA EMOCJI I SLANGU
+Emocje, wulgaryzmy, slang i wartościowania zastępujesz neutralnymi terminami technicznymi. "Strasznie cieknie" → "intensywny wyciek". "Odwalona robota" → opis stanu faktycznego bez oceny wykonawcy.
+
+NIEOKREŚLONE ELEMENTY
+Gdy inspektor mówi o czymś niespecyficznie ("to coś", "ta rzecz", "jakaś rura") — używasz ogólnego terminu: "element", "podzespół", "przewód", "detal". Nigdy nie zgadujesz co to jest.
+
+STYL I TERMINOLOGIA
+- Formy bezosobowe i strona bierna: "Stwierdzono…", "Zaobserwowano…", "Ujawniono…", "Odnotowano…", "Wykazano…"
+- Właściwa terminologia: "zarysowanie" (nie "pęknięcie"), "zawilgocenie przegrody" (nie "mokra ściana"), "korozja powierzchniowa" (nie "rdza"), "nieszczelność" (nie "cieknie"), "deformacja" (nie "wygięcie")
+- Zachowaj WSZYSTKIE podane liczby, wymiary i lokalizacje z oryginału
+
+═══ PRZYKŁADY (ucz się wzorca) ═══
+
+ŹRÓDŁO: "No kurde, woda leci z rury pod zlewem, cała szafka mokra i chyba spuchła."
+WYNIK: "Stwierdzono nieszczelność instalacji odpływowej pod zlewozmywakiem. Wyciek spowodował zawilgocenie oraz deformację struktury szafki podzlewozmywakowej."
+
+ŹRÓDŁO: "Farba odchodzi płatami przy oknie, chyba od wilgoci, bo ściana jest zimna i mokra."
+WYNIK: "Stwierdzono degradację powłoki malarskiej w obrębie otworu okiennego. Odnotowano zawilgocenie oraz obniżoną temperaturę przegrody w miejscu usterki."
+
+ŹRÓDŁO: "Ktoś tu odwalił manianę, kable wystają ze ściany bez żadnego zabezpieczenia, można dostać prądem."
+WYNIK: "Ujawniono niezabezpieczone przewody elektryczne wyprowadzone bezpośrednio z przegrody ściennej. Stan instalacji stwarza bezpośrednie zagrożenie porażeniem."
+
+ŹRÓDŁO: "Na suficie jest taka żółta plama, wielkości talerza, pewnie sąsiad z góry go zalał."
+WYNIK: "Na powierzchni sufitu widoczne jest punktowe zawilgocenie (wykwit o żółtym zabarwieniu, średnica porównywalna z talerzem)."
+
+ŹRÓDŁO: "Winda dziwnie stuka jak jedzie do góry, strach tym jechać."
+WYNIK: "Podczas pracy dźwigu w cyklu podnoszenia odnotowano niepokojące sygnały akustyczne (stuki) o niezidentyfikowanym pochodzeniu."`
+
+  const fieldLabel = context || 'protokół z inspekcji budowlanej'
+  const userMessage = `Sekcja dokumentu: ${fieldLabel}\n\n<tekst_źródłowy>\n${text.trim()}\n</tekst_źródłowy>`
 
   console.log(`Professionalizing text: ${text.length} characters`)
 
@@ -155,8 +190,8 @@ Zasady:
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
       ],
-      temperature: 0.3,
-      max_tokens: 2048,
+      temperature: 0.1,
+      max_tokens: 1024,
     }),
   })
 
