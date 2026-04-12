@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/config/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { STORAGE_BUCKETS } from '@/config/constants'
+import { db } from '@/lib/offlineDb'
+import { createVoiceNoteOffline } from '@/lib/offlineMutations'
 
 /** Refresh session to ensure a valid JWT before Edge Function calls */
 async function ensureFreshSession() {
@@ -32,6 +34,13 @@ export function useCreateVoiceNote() {
     mutationFn: async ({ inspectionId, defectId, audioBlob, durationSeconds }: CreateVoiceNoteInput) => {
       if (!user) throw new Error('Nie zalogowano')
 
+      if (!navigator.onLine) {
+        return createVoiceNoteOffline(
+          { inspectionId, defectId, audioBlob, durationSeconds },
+          user.id,
+        )
+      }
+
       const id = crypto.randomUUID()
       const storagePath = `${user.id}/${inspectionId}/${id}.webm`
 
@@ -55,6 +64,10 @@ export function useCreateVoiceNote() {
         .single()
 
       if (error) throw error
+
+      // Write-through
+      await db.voice_notes.put({ ...(data as Record<string, unknown>), _sync_status: 'synced' } as never)
+
       return data
     },
     onSuccess: () => {
@@ -72,6 +85,10 @@ interface TranscribeInput {
 export function useTranscribeAudio() {
   return useMutation({
     mutationFn: async ({ audioBlob }: TranscribeInput) => {
+      if (!navigator.onLine) {
+        throw new Error('Transkrypcja wymaga połączenia z internetem')
+      }
+
       await ensureFreshSession()
 
       const formData = new FormData()
@@ -110,6 +127,10 @@ interface ProfessionalizeInput {
 export function useProfessionalizeText() {
   return useMutation({
     mutationFn: async ({ text, context }: ProfessionalizeInput) => {
+      if (!navigator.onLine) {
+        throw new Error('Profesjonalizacja tekstu wymaga połączenia z internetem')
+      }
+
       await ensureFreshSession()
 
       const { data, error } = await supabase.functions.invoke('ai-proxy', {
@@ -117,7 +138,6 @@ export function useProfessionalizeText() {
       })
 
       if (error) {
-        // Try to extract detailed error from response
         let detail = ''
         try {
           const ctx = (error as { context?: Response }).context
@@ -152,6 +172,8 @@ export function useDeleteVoiceNote() {
         .eq('id', id)
 
       if (error) throw error
+
+      await db.voice_notes.delete(id)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['voice-notes'] })
@@ -183,6 +205,9 @@ export function useUpdateVoiceNoteTranscription() {
         .single()
 
       if (error) throw error
+
+      await db.voice_notes.put({ ...(data as Record<string, unknown>), _sync_status: 'synced' } as never)
+
       return data
     },
     onSuccess: () => {

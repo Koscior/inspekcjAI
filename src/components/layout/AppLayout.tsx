@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { useUiStore } from '@/store/uiStore'
+import { OfflineBanner } from '@/components/ui'
 
 export function AppLayout() {
   const { sidebarOpen, setSidebarOpen, toggleSidebar } = useUiStore()
@@ -36,6 +37,8 @@ export function AppLayout() {
           <span className="font-bold text-white text-lg">InspekcjAI</span>
         </div>
       </header>
+
+      <OfflineBanner />
 
       {/* Page content */}
       <main className="flex-1 overflow-y-auto px-4 py-4">
