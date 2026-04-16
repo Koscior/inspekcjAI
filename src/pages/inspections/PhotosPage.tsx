@@ -9,6 +9,8 @@ import { useUiStore } from '@/store/uiStore'
 import { PhotoUploader } from '@/components/photos/PhotoUploader'
 import { PhotoGrid } from '@/components/photos/PhotoGrid'
 import { PhotoViewer } from '@/components/photos/PhotoViewer'
+import { AiAnalysisModal } from '@/components/photos/AiAnalysisModal'
+import { useAiPhotoAnalysis } from '@/hooks/useAiPhotoAnalysis'
 import type { Photo } from '@/types/database.types'
 
 type FilterTab = 'all' | 'defects' | 'checklist' | 'free'
@@ -32,6 +34,8 @@ export default function PhotosPage() {
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
   const [highlightedPhotoId, setHighlightedPhotoId] = useState<string | null>(null)
   const clearHighlight = useCallback(() => setHighlightedPhotoId(null), [])
+
+  const ai = useAiPhotoAnalysis({ inspectionId: inspectionId! })
 
   const photos = (allPhotos ?? []).filter((p) => {
     if (activeTab === 'defects') return !!p.defect_id
@@ -120,6 +124,7 @@ export default function PhotosPage() {
           columns={4}
           onPhotoClick={(photo) => setViewerIndex(photos.indexOf(photo))}
           onDelete={handleDelete}
+          onAiAnalyze={(photo) => ai.trigger(photo)}
           highlightedPhotoId={highlightedPhotoId}
           onHighlightDone={clearHighlight}
         />
@@ -137,8 +142,21 @@ export default function PhotosPage() {
               photoId: photo.id,
             }))
           }}
+          onAiAnalyze={(photo) => ai.trigger(photo)}
         />
       )}
+
+      {/* AI photo analysis */}
+      <AiAnalysisModal
+        isOpen={ai.state.open}
+        loading={ai.state.loading}
+        error={ai.state.error}
+        aiText={ai.state.aiText}
+        existingText={ai.state.existingText}
+        onClose={ai.close}
+        onReplace={ai.onReplace}
+        onAppend={ai.onAppend}
+      />
     </div>
   )
 }

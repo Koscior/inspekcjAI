@@ -23,7 +23,20 @@
       "Bash(py --version)",
       "Bash(node -e \":*)",
       "Read(//c/Users/mateu/Downloads/pdf-reader/**)",
-      "Bash(node read-pdfs.mjs)"
+      "Bash(node read-pdfs.mjs)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(npx tsc:*)",
+      "Bash(grep -E \"\\\\.tsx$\")",
+      "Bash(npx playwright:*)",
+      "Bash(npx vitest:*)",
+      "Bash(xargs grep:*)",
+      "Bash(xargs basename:*)",
+      "Bash(grep -E \"use[A-Z].*\\\\.ts$\")",
+      "Bash(find \"c:\\\\Users\\\\mateu\\\\Desktop\\\\Projekty\\\\InspekcjAI cloude/src\" -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec grep -l \"console\\\\.\\\\|import.meta.env.DEV\" {} \\\\;)",
+      "Bash(grep -n \"reports_used\\\\|report_limit\\\\|FREE_PLAN\\\\|quota\" supabase/migrations/*.sql)",
+      "Bash(grep -n \"ErrorBoundary\\\\|componentDidCatch\\\\|captureException\" src/components/ui/*.tsx src/components/ui/ErrorBoundary.tsx)",
+      "Bash(grep -A 20 \"CREATE TABLE.*photos\" \"/c/Users/mateu/Desktop/Projekty/InspekcjAI cloude/supabase/migrations/\"*.sql)",
+      "Bash(find \"/c/Users/mateu/Desktop/Projekty/InspekcjAI cloude/supabase/migrations\" -name \"*.sql\" -exec grep -l \"photos\" {} \\\\;)"
     ]
   }
 }

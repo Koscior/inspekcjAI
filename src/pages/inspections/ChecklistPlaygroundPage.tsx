@@ -11,8 +11,10 @@ import { useUiStore } from '@/store/uiStore'
 import { PhotoUploader } from '@/components/photos/PhotoUploader'
 import { PhotoGrid } from '@/components/photos/PhotoGrid'
 import { PhotoViewer } from '@/components/photos/PhotoViewer'
+import { AiAnalysisModal } from '@/components/photos/AiAnalysisModal'
+import { useAiPhotoAnalysis } from '@/hooks/useAiPhotoAnalysis'
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder'
-import type { ChecklistItem } from '@/types/database.types'
+import type { ChecklistItem, Photo } from '@/types/database.types'
 import type { Inspection } from '@/types/database.types'
 
 export default function ChecklistPlaygroundPage() {
@@ -25,6 +27,7 @@ export default function ChecklistPlaygroundPage() {
   const { data: inspection } = useInspection(inspectionId)
   const { data: sections, isLoading } = useChecklist(inspectionId, inspection?.type as Inspection['type'])
   const updateItem = useUpdateChecklistItem()
+  const ai = useAiPhotoAnalysis({ inspectionId: inspectionId! })
 
   const [openSection, setOpenSection] = useState<string | null>(null)
 
@@ -154,6 +157,7 @@ export default function ChecklistPlaygroundPage() {
                             onUpdate={handleUpdate}
                             highlighted={isHighlighted}
                             onHighlightConsumed={clearOpenItem}
+                            onAiAnalyzePhoto={(photo) => ai.trigger(photo)}
                           />
                         )
                       }
@@ -165,6 +169,7 @@ export default function ChecklistPlaygroundPage() {
                           onUpdate={handleUpdate}
                           highlighted={isHighlighted}
                           onHighlightConsumed={clearOpenItem}
+                          onAiAnalyzePhoto={(photo) => ai.trigger(photo)}
                         />
                       )
                     })}
@@ -175,6 +180,18 @@ export default function ChecklistPlaygroundPage() {
           })}
         </div>
       )}
+
+      {/* AI photo analysis */}
+      <AiAnalysisModal
+        isOpen={ai.state.open}
+        loading={ai.state.loading}
+        error={ai.state.error}
+        aiText={ai.state.aiText}
+        existingText={ai.state.existingText}
+        onClose={ai.close}
+        onReplace={ai.onReplace}
+        onAppend={ai.onAppend}
+      />
     </div>
   )
 }
@@ -218,12 +235,13 @@ function YesNoRow({ item, onUpdate }: {
 
 // ─── YesNo + Description + Photos Row ────────────────────────────────────────
 
-function YesNoDescPhotosRow({ item, inspectionId, onUpdate, highlighted, onHighlightConsumed }: {
+function YesNoDescPhotosRow({ item, inspectionId, onUpdate, highlighted, onHighlightConsumed, onAiAnalyzePhoto }: {
   item: ChecklistItem
   inspectionId: string
   onUpdate: (item: ChecklistItem, updates: Record<string, unknown>) => void
   highlighted?: boolean
   onHighlightConsumed?: () => void
+  onAiAnalyzePhoto?: (photo: Photo) => void
 }) {
   const navigate = useNavigate()
   const rowRef = useRef<HTMLDivElement>(null)
@@ -312,7 +330,7 @@ function YesNoDescPhotosRow({ item, inspectionId, onUpdate, highlighted, onHighl
       {/* Photos */}
       {photos && photos.length > 0 && (
         <div className="mt-2">
-          <PhotoGrid photos={photos} columns={4} onPhotoClick={(p) => setViewerIndex(photos.indexOf(p))} highlightedPhotoId={highlightedPhotoId} onHighlightDone={clearPhotoHighlight} />
+          <PhotoGrid photos={photos} columns={4} onPhotoClick={(p) => setViewerIndex(photos.indexOf(p))} onAiAnalyze={onAiAnalyzePhoto} highlightedPhotoId={highlightedPhotoId} onHighlightDone={clearPhotoHighlight} />
         </div>
       )}
       <div className="mt-2">
@@ -332,6 +350,7 @@ function YesNoDescPhotosRow({ item, inspectionId, onUpdate, highlighted, onHighl
           onAnnotate={(photo) => {
             navigate(buildPath(ROUTES.PHOTO_ANNOTATE, { inspectionId, photoId: photo.id }))
           }}
+          onAiAnalyze={onAiAnalyzePhoto}
         />
       )}
     </div>
@@ -349,12 +368,13 @@ const STATE_OPTIONS = [
 
 // ─── Text + Photos Row ───────────────────────────────────────────────────────
 
-function TextPhotosRow({ item, inspectionId, onUpdate, highlighted, onHighlightConsumed }: {
+function TextPhotosRow({ item, inspectionId, onUpdate, highlighted, onHighlightConsumed, onAiAnalyzePhoto }: {
   item: ChecklistItem
   inspectionId: string
   onUpdate: (item: ChecklistItem, updates: Record<string, unknown>) => void
   highlighted?: boolean
   onHighlightConsumed?: () => void
+  onAiAnalyzePhoto?: (photo: Photo) => void
 }) {
   const navigate = useNavigate()
   const rowRef = useRef<HTMLDivElement>(null)
@@ -435,7 +455,7 @@ function TextPhotosRow({ item, inspectionId, onUpdate, highlighted, onHighlightC
       {/* Photos */}
       {photos && photos.length > 0 && (
         <div className="mt-2">
-          <PhotoGrid photos={photos} columns={4} onPhotoClick={(p) => setViewerIndex(photos.indexOf(p))} highlightedPhotoId={highlightedPhotoId} onHighlightDone={clearPhotoHighlight} />
+          <PhotoGrid photos={photos} columns={4} onPhotoClick={(p) => setViewerIndex(photos.indexOf(p))} onAiAnalyze={onAiAnalyzePhoto} highlightedPhotoId={highlightedPhotoId} onHighlightDone={clearPhotoHighlight} />
         </div>
       )}
       <div className="mt-2">
@@ -455,6 +475,7 @@ function TextPhotosRow({ item, inspectionId, onUpdate, highlighted, onHighlightC
           onAnnotate={(photo) => {
             navigate(buildPath(ROUTES.PHOTO_ANNOTATE, { inspectionId, photoId: photo.id }))
           }}
+          onAiAnalyze={onAiAnalyzePhoto}
         />
       )}
     </div>

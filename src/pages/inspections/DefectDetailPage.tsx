@@ -12,6 +12,8 @@ import { useUiStore } from '@/store/uiStore'
 import { PhotoUploader } from '@/components/photos/PhotoUploader'
 import { PhotoGrid } from '@/components/photos/PhotoGrid'
 import { PhotoViewer } from '@/components/photos/PhotoViewer'
+import { AiAnalysisModal } from '@/components/photos/AiAnalysisModal'
+import { useAiPhotoAnalysis } from '@/hooks/useAiPhotoAnalysis'
 import { FloorPlanViewer } from '@/components/floor-plans/FloorPlanViewer'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
@@ -32,6 +34,8 @@ export default function DefectDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [highlightedPhotoId, setHighlightedPhotoId] = useState<string | null>(null)
   const clearHighlight = useCallback(() => setHighlightedPhotoId(null), [])
+
+  const ai = useAiPhotoAnalysis({ inspectionId: inspectionId! })
 
   async function handleDelete() {
     if (!inspectionId || !defectId) return
@@ -182,7 +186,7 @@ export default function DefectDetailPage() {
             photos={photos}
             onPhotoClick={(p) => setViewerPhoto(photos.indexOf(p))}
             onDelete={handleDeletePhoto}
-            onAiAnalyze={() => addToast({ type: 'info', message: 'AI analiza zdjęcia — wkrótce' })}
+            onAiAnalyze={(photo) => ai.trigger(photo)}
             highlightedPhotoId={highlightedPhotoId}
             onHighlightDone={clearHighlight}
           />
@@ -201,9 +205,21 @@ export default function DefectDetailPage() {
               photoId: photo.id,
             }))
           }}
-          onAiAnalyze={() => addToast({ type: 'info', message: 'AI analiza zdjęcia — wkrótce' })}
+          onAiAnalyze={(photo) => ai.trigger(photo)}
         />
       )}
+
+      {/* AI photo analysis */}
+      <AiAnalysisModal
+        isOpen={ai.state.open}
+        loading={ai.state.loading}
+        error={ai.state.error}
+        aiText={ai.state.aiText}
+        existingText={ai.state.existingText}
+        onClose={ai.close}
+        onReplace={ai.onReplace}
+        onAppend={ai.onAppend}
+      />
 
       {/* Delete confirm */}
       <ConfirmModal

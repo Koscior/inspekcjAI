@@ -155,6 +155,71 @@ export function useProfessionalizeText() {
   })
 }
 
+// ─── Analyze photo via ai-proxy Edge Function (Vision) ──────────────────────
+
+import type { Photo } from '@/types/database.types'
+
+export type PhotoAnalysisContext = 'defect' | 'checklist' | 'general'
+
+interface AnalyzePhotoInput {
+  photo: Photo
+  context: PhotoAnalysisContext
+}
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buf = await blob.arrayBuffer()
+  const bytes = new Uint8Array(buf)
+  let binary = ''
+  const chunkSize = 0x8000
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize) as unknown as number[])
+  }
+  return btoa(binary)
+}
+
+export function useAnalyzePhoto() {
+  return useMutation({
+    mutationFn: async ({ photo, context }: AnalyzePhotoInput) => {
+      if (!navigator.onLine) {
+        throw new Error('Analiza wymaga połączenia z internetem')
+      }
+
+      await ensureFreshSession()
+
+      // Download photo bytes from storage
+      const { data: blob, error: dlError } = await supabase.storage
+        .from(STORAGE_BUCKETS.photos)
+        .download(photo.original_path)
+
+      if (dlError || !blob) {
+        throw new Error(dlError?.message || 'Nie udało się pobrać zdjęcia do analizy')
+      }
+
+      const mime = blob.type || 'image/jpeg'
+      const base64 = await blobToBase64(blob)
+
+      const { data, error } = await supabase.functions.invoke('ai-proxy', {
+        body: { action: 'analyze_image', image_base64: base64, mime_type: mime, context },
+      })
+
+      if (error) {
+        let detail = ''
+        try {
+          const ctx = (error as { context?: Response }).context
+          if (ctx) {
+            const body = await ctx.json()
+            detail = body?.error || JSON.stringify(body)
+          }
+        } catch { /* ignore parse errors */ }
+        throw new Error(detail || error.message || 'Błąd analizy zdjęcia')
+      }
+      if (data?.error) throw new Error(data.error)
+
+      return data.description as string
+    },
+  })
+}
+
 // ─── Delete ─────────────────────────────────────────────────────────────────
 
 export function useDeleteVoiceNote() {

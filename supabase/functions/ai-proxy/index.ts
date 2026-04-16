@@ -57,10 +57,12 @@ Deno.serve(async (req: Request) => {
     switch (action) {
       case 'professionalize':
         return await handleProfessionalize(body)
+      case 'analyze_image':
+        return await handleAnalyzeImage(body)
       case 'transcribe':
         return jsonResponse({ error: 'Transcribe requires multipart/form-data with audio' }, 400)
       default:
-        return jsonResponse({ error: `Unknown action: ${action}. Use "transcribe" or "professionalize"` }, 400)
+        return jsonResponse({ error: `Unknown action: ${action}. Use "transcribe", "professionalize" or "analyze_image"` }, 400)
     }
   } catch (err) {
     console.error('ai-proxy error:', err)
@@ -208,6 +210,119 @@ WYNIK: "Podczas pracy dźwigu w cyklu podnoszenia odnotowano niepokojące sygna�
   return jsonResponse({
     professional_text: professionalText,
     usage: chatData.usage, // token count for monitoring
+  })
+}
+
+// ─── /analyze_image — GPT-4o-mini Vision ────────────────────────────────────
+
+const ALLOWED_IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
+
+async function handleAnalyzeImage(body: {
+  image_base64?: string
+  mime_type?: string
+  context?: 'defect' | 'checklist' | 'general'
+}): Promise<Response> {
+  const { image_base64, mime_type, context } = body
+
+  if (!image_base64 || image_base64.trim().length === 0) {
+    return jsonResponse({ error: 'Missing "image_base64" field in request body' }, 400)
+  }
+  if (!mime_type || !ALLOWED_IMAGE_MIMES.has(mime_type)) {
+    return jsonResponse({ error: 'Invalid or missing "mime_type". Allowed: image/jpeg, image/png, image/webp' }, 400)
+  }
+
+  // Rough size check on the base64 payload (base64 is ~4/3 of binary size)
+  const approxBytes = Math.floor((image_base64.length * 3) / 4)
+  if (approxBytes > MAX_IMAGE_BYTES) {
+    return jsonResponse({ error: 'Image too large. Maximum size is 10 MB.' }, 400)
+  }
+
+  const systemPrompt = `Jesteś asystentem polskiego inspektora budowlanego. Analizujesz zdjęcie i sporządzasz krótki, rzeczowy opis techniczny tego, co WIDAĆ na zdjęciu.
+
+═══ ŻELAZNE ZASADY (nigdy nie łam) ═══
+
+OPISUJESZ TYLKO TO, CO WIDOCZNE
+Nie opisujesz rzeczy, których nie ma na zdjęciu. Nie dopowiadasz kontekstu, którego nie znasz.
+
+ZAKAZ ZMYŚLANIA WYMIARÓW
+Nie podajesz żadnych liczb — metrów, centymetrów, milimetrów, powierzchni, głębokości, procentów — chyba że są fizycznie widoczne na zdjęciu (np. miarka, taśma, etykieta z wymiarem). Jeśli nie widać skali — NIE podajesz wymiarów.
+
+ZAKAZ DIAGNOZ I PRZYCZYN
+Nie spekulujesz o przyczynach ("prawdopodobnie od wilgoci", "zapewne zalane przez sąsiada", "wygląda na stare"). Nie stawiasz diagnoz eksperckich. Nie oceniasz wieku, stopnia zużycia ani ryzyka. Opisujesz tylko fakty wizualne.
+
+ZAKAZ ZALECEŃ
+Nie dodajesz rekomendacji, sugestii napraw, ocen pilności. To robi inspektor — Ty tylko opisujesz stan widoczny.
+
+NIEPEWNOŚĆ
+Jeśli nie jesteś w stanie zidentyfikować co widzisz na zdjęciu, odpowiadasz dokładnie: "Na zdjęciu widoczny element wymagający weryfikacji inspektora — opis automatyczny niemożliwy." Nie zgadujesz.
+
+STYL I TERMINOLOGIA
+- Polszczyzna techniczna, bezosobowa: "Widoczne jest…", "Stwierdzono…", "Na zdjęciu widać…", "Odnotowano…"
+- Właściwa terminologia: "zarysowanie" (nie "pęknięcie"), "zawilgocenie przegrody" (nie "mokra ściana"), "korozja powierzchniowa" (nie "rdza"), "odspojenie powłoki malarskiej", "ubytek tynku", "deformacja", "nieszczelność"
+- Nie używaj słów wartościujących ("brzydki", "stary", "zniszczony do cna", "fatalny")
+- Nie używaj słów spekulatywnych ("chyba", "pewnie", "może", "wydaje się")
+
+FORMAT ODPOWIEDZI
+- 1–4 zdania, zwięźle
+- TYLKO sam opis, bez preambuły, bez nagłówków, bez listy punktowanej
+- Bez podpisu, bez uwag końcowych`
+
+  const contextLabel =
+    context === 'defect' ? 'opis usterki w protokole inspekcji budowlanej'
+    : context === 'checklist' ? 'uwagi do punktu kontrolnego w protokole przeglądu'
+    : 'opis zdjęcia dokumentacyjnego z inspekcji'
+
+  const userText = `Sekcja dokumentu: ${contextLabel}. Opisz rzeczowo to, co widać na zdjęciu, trzymając się żelaznych zasad.`
+
+  const chatRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: userText },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${mime_type};base64,${image_base64}`,
+                detail: 'low',
+              },
+            },
+          ],
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 400,
+    }),
+  })
+
+  if (!chatRes.ok) {
+    const errorBody = await chatRes.text()
+    console.error('GPT-4o-mini Vision API error:', chatRes.status, errorBody)
+    return jsonResponse({
+      error: `Image analysis failed (${chatRes.status})`,
+      details: errorBody,
+    }, chatRes.status)
+  }
+
+  const chatData = await chatRes.json()
+  const description = chatData.choices?.[0]?.message?.content?.trim() ?? ''
+
+  if (!description) {
+    return jsonResponse({ error: 'AI returned empty response' }, 500)
+  }
+
+  return jsonResponse({
+    description,
+    usage: chatData.usage,
   })
 }
 

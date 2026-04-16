@@ -11,6 +11,8 @@ import { useUiStore } from '@/store/uiStore'
 import { PhotoUploader } from '@/components/photos/PhotoUploader'
 import { PhotoGrid } from '@/components/photos/PhotoGrid'
 import { PhotoViewer } from '@/components/photos/PhotoViewer'
+import { AiAnalysisModal } from '@/components/photos/AiAnalysisModal'
+import { useAiPhotoAnalysis } from '@/hooks/useAiPhotoAnalysis'
 import type { ChecklistItem, Photo } from '@/types/database.types'
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder'
 import type { Inspection } from '@/types/database.types'
@@ -32,6 +34,7 @@ export default function ChecklistPage() {
   }
   const { data: sections, isLoading } = useChecklist(inspectionId, inspection?.type as Inspection['type'])
   const updateItem = useUpdateChecklistItem()
+  const ai = useAiPhotoAnalysis({ inspectionId: inspectionId! })
 
   const [openSection, setOpenSection] = useState<string | null>(null)
 
@@ -142,6 +145,7 @@ export default function ChecklistPage() {
                         onUpdate={handleUpdate}
                         highlighted={item.id === openItemId}
                         onHighlightConsumed={clearOpenItem}
+                        onAiAnalyzePhoto={(photo) => ai.trigger(photo)}
                       />
                     ))}
                   </div>
@@ -151,6 +155,18 @@ export default function ChecklistPage() {
           })}
         </div>
       )}
+
+      {/* AI photo analysis */}
+      <AiAnalysisModal
+        isOpen={ai.state.open}
+        loading={ai.state.loading}
+        error={ai.state.error}
+        aiText={ai.state.aiText}
+        existingText={ai.state.existingText}
+        onClose={ai.close}
+        onReplace={ai.onReplace}
+        onAppend={ai.onAppend}
+      />
     </div>
   )
 }
@@ -172,9 +188,10 @@ interface ItemRowProps {
   onUpdate: (item: ChecklistItem, updates: Record<string, unknown>) => void
   highlighted?: boolean
   onHighlightConsumed?: () => void
+  onAiAnalyzePhoto?: (photo: Photo) => void
 }
 
-function ChecklistItemRow({ item, inspectionId, onUpdate, highlighted, onHighlightConsumed }: ItemRowProps) {
+function ChecklistItemRow({ item, inspectionId, onUpdate, highlighted, onHighlightConsumed, onAiAnalyzePhoto }: ItemRowProps) {
   const navigate = useNavigate()
   const rowRef = useRef<HTMLDivElement>(null)
   const [notesValue, setNotesValue] = useState(item.notes || '')
@@ -262,6 +279,7 @@ function ChecklistItemRow({ item, inspectionId, onUpdate, highlighted, onHighlig
             photos={photos}
             columns={4}
             onPhotoClick={(p) => setViewerIndex(photos.indexOf(p))}
+            onAiAnalyze={onAiAnalyzePhoto}
             highlightedPhotoId={highlightedPhotoId}
             onHighlightDone={clearPhotoHighlight}
           />
@@ -294,6 +312,7 @@ function ChecklistItemRow({ item, inspectionId, onUpdate, highlighted, onHighlig
               photoId: photo.id,
             }))
           }}
+          onAiAnalyze={onAiAnalyzePhoto}
         />
       )}
     </div>

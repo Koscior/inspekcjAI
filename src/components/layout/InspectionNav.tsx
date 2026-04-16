@@ -7,6 +7,7 @@ import { useInspection } from '@/hooks/useInspections'
 import { useChecklist, type ChecklistSection } from '@/hooks/useChecklist'
 import { useUploadPhoto } from '@/hooks/usePhotos'
 import { useUiStore } from '@/store/uiStore'
+import { CameraCapture } from '@/components/photos/CameraCapture'
 import type { Inspection } from '@/types/database.types'
 
 const CHECKLIST_TYPES: Inspection['type'][] = ['roczny', 'piecioletni', 'polroczny', 'plac_zabaw']
@@ -35,9 +36,8 @@ export function InspectionNav() {
 
   const [showPicker, setShowPicker] = useState(false)
   const [selectedSection, setSelectedSection] = useState<ChecklistSection | null>(null)
-  const [pendingMode, setPendingMode] = useState<'gallery' | 'camera' | null>(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-  const cameraRef = useRef<HTMLInputElement>(null)
   const selectedItemRef = useRef<string | null>(null)
   const upload = useUploadPhoto()
 
@@ -80,43 +80,57 @@ export function InspectionNav() {
 
   function handleItemSelect(itemId: string, mode: 'gallery' | 'camera') {
     selectedItemRef.current = itemId
-    setPendingMode(mode)
     setShowPicker(false)
-    setTimeout(() => {
-      if (mode === 'gallery') fileRef.current?.click()
-      else cameraRef.current?.click()
-    }, 100)
+    if (mode === 'gallery') {
+      setTimeout(() => fileRef.current?.click(), 100)
+    } else {
+      setTimeout(() => setCameraOpen(true), 100)
+    }
+  }
+
+  async function uploadOne(file: File) {
+    if (!file.type.startsWith('image/')) {
+      addToast({ type: 'error', message: `${file.name} nie jest zdjęciem` })
+      return false
+    }
+    try {
+      await upload.mutateAsync({
+        inspectionId: effectiveId,
+        file,
+        checklistItemId: selectedItemRef.current ?? undefined,
+      })
+      return true
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Błąd uploadu'
+      addToast({ type: 'error', message: msg })
+      return false
+    }
+  }
+
+  function finalizeItemUpload() {
+    const itemId = selectedItemRef.current
+    selectedItemRef.current = null
+    if (!itemId) return
+    const checklistPath = buildPath(ROUTES.INSPECTION_CHECKLIST, { id: effectiveId })
+    navigate(`${checklistPath}?openItem=${itemId}`)
   }
 
   async function handleFiles(files: FileList | null) {
     if (!files?.length || !selectedItemRef.current) return
-
+    let any = false
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) {
-        addToast({ type: 'error', message: `${file.name} nie jest zdjęciem` })
-        continue
-      }
-      try {
-        await upload.mutateAsync({
-          inspectionId: effectiveId,
-          file,
-          checklistItemId: selectedItemRef.current,
-        })
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Błąd uploadu'
-        addToast({ type: 'error', message: msg })
-      }
+      if (await uploadOne(file)) any = true
     }
-
-    addToast({ type: 'success', message: 'Zdjęcia dodane' })
-    const itemId = selectedItemRef.current
-    selectedItemRef.current = null
-    setPendingMode(null)
+    if (any) addToast({ type: 'success', message: 'Zdjęcia dodane' })
     if (fileRef.current) fileRef.current.value = ''
-    if (cameraRef.current) cameraRef.current.value = ''
+    finalizeItemUpload()
+  }
 
-    const checklistPath = buildPath(ROUTES.INSPECTION_CHECKLIST, { id: effectiveId })
-    navigate(`${checklistPath}?openItem=${itemId}`)
+  async function handleCameraCapture(file: File) {
+    if (!selectedItemRef.current) return
+    const ok = await uploadOne(file)
+    if (ok) addToast({ type: 'success', message: 'Zdjęcie dodane' })
+    finalizeItemUpload()
   }
 
   return (
@@ -131,15 +145,6 @@ export function InspectionNav() {
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
         />
-        <input
-          ref={cameraRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
-        />
-
         {/* 4 Large Tabs */}
         <div className="grid grid-cols-4 gap-1 py-2">
           {tabs.map((tab) => {
@@ -252,6 +257,15 @@ export function InspectionNav() {
           </div>
         </div>
       )}
+
+      <CameraCapture
+        isOpen={cameraOpen}
+        onClose={() => {
+          setCameraOpen(false)
+          if (selectedItemRef.current) selectedItemRef.current = null
+        }}
+        onCapture={handleCameraCapture}
+      />
     </>
   )
 }

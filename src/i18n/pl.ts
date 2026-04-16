@@ -111,6 +111,15 @@ export const pl = {
     analyze: 'Analizuj z AI',
     noPhotos: 'Brak zdjęć',
     caption: 'Podpis zdjęcia',
+    aiAnalysisTitle: 'Opis zdjęcia — AI',
+    aiAnalysisHint: 'AI opisuje tylko to, co widoczne. Zweryfikuj tekst przed zapisem.',
+    aiAnalysisLoading: 'Analizuję zdjęcie…',
+    aiReplace: 'Zastąp opis',
+    aiAppend: 'Dopisz do opisu',
+    aiCancel: 'Anuluj',
+    aiError: 'Nie udało się przeanalizować zdjęcia',
+    aiExistingHeader: 'Obecny opis',
+    aiResultHeader: 'Propozycja AI (możesz edytować)',
   },
 
   // Floor Plans

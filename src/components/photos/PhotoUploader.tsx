@@ -1,8 +1,9 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Camera, Upload, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { useUploadPhoto } from '@/hooks/usePhotos'
 import { useUiStore } from '@/store/uiStore'
+import { CameraCapture } from './CameraCapture'
 
 interface PhotoUploaderProps {
   inspectionId: string
@@ -13,38 +14,44 @@ interface PhotoUploaderProps {
 
 export function PhotoUploader({ inspectionId, defectId, checklistItemId, onUploaded }: PhotoUploaderProps) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const cameraRef = useRef<HTMLInputElement>(null)
   const upload = useUploadPhoto()
   const addToast = useUiStore((s) => s.addToast)
+  const [cameraOpen, setCameraOpen] = useState(false)
+
+  async function uploadFile(file: File) {
+    if (!file.type.startsWith('image/')) {
+      addToast({ type: 'error', message: `${file.name} nie jest zdjęciem` })
+      return undefined
+    }
+    try {
+      const photo = await upload.mutateAsync({
+        inspectionId,
+        file,
+        defectId,
+        checklistItemId,
+      })
+      return photo.id
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Błąd uploadu'
+      addToast({ type: 'error', message: msg })
+      return undefined
+    }
+  }
 
   async function handleFiles(files: FileList | null) {
     if (!files?.length) return
-
     let lastPhotoId: string | undefined
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) {
-        addToast({ type: 'error', message: `${file.name} nie jest zdjęciem` })
-        continue
-      }
-
-      try {
-        const photo = await upload.mutateAsync({
-          inspectionId,
-          file,
-          defectId,
-          checklistItemId,
-        })
-        lastPhotoId = photo.id
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Błąd uploadu'
-        addToast({ type: 'error', message: msg })
-      }
+      const id = await uploadFile(file)
+      if (id) lastPhotoId = id
     }
-
     if (lastPhotoId) onUploaded?.(lastPhotoId)
-    // Reset inputs
     if (fileRef.current) fileRef.current.value = ''
-    if (cameraRef.current) cameraRef.current.value = ''
+  }
+
+  async function handleCameraCapture(file: File) {
+    const id = await uploadFile(file)
+    if (id) onUploaded?.(id)
   }
 
   return (
@@ -54,14 +61,6 @@ export function PhotoUploader({ inspectionId, defectId, checklistItemId, onUploa
         type="file"
         accept="image/*"
         multiple
-        className="hidden"
-        onChange={(e) => handleFiles(e.target.files)}
-      />
-      <input
-        ref={cameraRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
@@ -81,12 +80,18 @@ export function PhotoUploader({ inspectionId, defectId, checklistItemId, onUploa
         type="button"
         variant="secondary"
         size="sm"
-        onClick={() => cameraRef.current?.click()}
+        onClick={() => setCameraOpen(true)}
         disabled={upload.isPending}
       >
         <Camera size={16} />
         Aparat
       </Button>
+
+      <CameraCapture
+        isOpen={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onCapture={handleCameraCapture}
+      />
     </div>
   )
 }

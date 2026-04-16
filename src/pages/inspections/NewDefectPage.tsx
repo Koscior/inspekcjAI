@@ -15,6 +15,8 @@ import { DEFECT_CATEGORIES, DEFECT_SEVERITY, DEFECT_TYPES, DEFECT_STATUSES, FLOO
 import { PhotoUploader } from '@/components/photos/PhotoUploader'
 import { PhotoGrid } from '@/components/photos/PhotoGrid'
 import { PhotoViewer } from '@/components/photos/PhotoViewer'
+import { AiAnalysisModal } from '@/components/photos/AiAnalysisModal'
+import { useAiPhotoAnalysis } from '@/hooks/useAiPhotoAnalysis'
 import { FloorPlanViewer } from '@/components/floor-plans/FloorPlanViewer'
 import { usePhotos } from '@/hooks/usePhotos'
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder'
@@ -41,6 +43,8 @@ export default function NewDefectPage() {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const [highlightedPhotoId, setHighlightedPhotoId] = useState<string | null>(null)
   const clearHighlight = useCallback(() => setHighlightedPhotoId(null), [])
+
+  const ai = useAiPhotoAnalysis({ inspectionId: inspectionId! })
 
   // Photos for newly created defect
   const { data: defectPhotos } = usePhotos(inspectionId, createdDefectId ? { defectId: createdDefectId } : undefined)
@@ -359,6 +363,7 @@ export default function NewDefectPage() {
                 <PhotoGrid
                   photos={defectPhotos}
                   onPhotoClick={(p) => setViewerIndex(defectPhotos.indexOf(p))}
+                  onAiAnalyze={(photo) => ai.trigger(photo)}
                   highlightedPhotoId={highlightedPhotoId}
                   onHighlightDone={clearHighlight}
                 />
@@ -404,8 +409,21 @@ export default function NewDefectPage() {
               photoId: photo.id,
             }))
           }}
+          onAiAnalyze={(photo) => ai.trigger(photo)}
         />
       )}
+
+      {/* AI photo analysis */}
+      <AiAnalysisModal
+        isOpen={ai.state.open}
+        loading={ai.state.loading}
+        error={ai.state.error}
+        aiText={ai.state.aiText}
+        existingText={ai.state.existingText}
+        onClose={ai.close}
+        onReplace={ai.onReplace}
+        onAppend={ai.onAppend}
+      />
     </div>
   )
 }
